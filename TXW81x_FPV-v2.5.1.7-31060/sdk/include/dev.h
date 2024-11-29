@@ -5,6 +5,9 @@
 extern "C" {
 #endif
 
+typedef unsigned int uint32;
+typedef signed int int32;
+
 struct dev_obj;
 
 struct devobj_ops{

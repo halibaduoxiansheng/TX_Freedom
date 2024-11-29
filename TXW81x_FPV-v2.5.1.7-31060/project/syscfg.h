@@ -24,7 +24,10 @@ struct system_status {
            upgrading: 1;
 };
 
-struct sys_config {
+/**
+ * system global structure
+ */
+struct sys_config { 
     uint16 magic_num, crc;
     uint16 size, cfg_ver, rev2;
     ///////////////////////////////////////
@@ -32,11 +35,11 @@ struct sys_config {
     uint8  wifi_mode, bss_bw, tx_mcs, channel;
     uint8  bssid[6], mac[6];
     uint8  ssid[32];
-    uint8  psk[32];
+    uint8  psk[32]; /* preshared key -> WPA/WPA2 PSK */
     char   passwd[32];
     uint16 bss_max_idle, beacon_int;
     uint16 ack_tmo, dtim_period;
-    uint32 key_mgmt;
+    uint32 key_mgmt; /* key management protocol */
 
     uint32 dhcpc_en:1, dhcpd_en:1, ap_hide:1, xxxxxx: 29;
     uint32 ipaddr, netmask, gw_ip;
@@ -45,6 +48,8 @@ struct sys_config {
     uint8  ble_pair_status;
     uint32 dsleep_test_cfg[4];
     uint16 wireless_paircode;
+
+    char license[176];
 };
 
 extern struct sys_config sys_cfgs;

@@ -9,12 +9,13 @@
  */
 #ifndef _HAL_GPIO_H_
 #define _HAL_GPIO_H_
+#include "dev.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
+typedef signed int int32;
 /**
   * @brief Enumeration constant for GPIO pin direction select
   * @note : this enum must mapping to OS @PinDirection

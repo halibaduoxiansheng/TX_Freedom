@@ -55,6 +55,8 @@
 #include "test_demo/test_demo.h"
 #include "atcmd.c"
 #include "keyWork.h"
+#include "../app/halibaduo/halibaduo.h"
+#include "../app/halibaduo/hali_wifi.h"
 
 extern uint8_t get_psram_status();
 
@@ -78,7 +80,7 @@ struct hgic_atcmd_normal {
 struct hgic_atcmd_normal *atcmd_uart_normal = NULL;
 
 
-#ifdef CONFIG_UMAC4
+#ifdef CONFIG_UMAC4 /* is access */
 int32 sys_wifi_event(uint8 ifidx, uint16 evt, uint32 param1, uint32 param2)
 {
     switch (evt) {
@@ -112,26 +114,30 @@ int32 sys_wifi_event(uint8 ifidx, uint16 evt, uint32 param1, uint32 param2)
 
 __init static void sys_cfg_load()
 {
-    
+    /* order system global structure apply room */
     struct sys_config *sys_cfgs_tmp = (struct sys_config*)malloc(sizeof(struct sys_config));
-    if(sys_cfgs_tmp)
+
+    if(sys_cfgs_tmp) /*apply succuess*/
     {
         memcpy(sys_cfgs_tmp,&sys_cfgs,sizeof(struct sys_config));
     }
+
+    /* read flash content, storage in sys_cfgs */
     if (syscfg_init(&sys_cfgs, sizeof(sys_cfgs)) == RET_OK) {
-        os_printf("old cfg_ver:%d\n",sys_cfgs.cfg_ver);
-		if(sys_cfgs.cfg_ver == CFG_VERSION_NUM){
+        os_printf("old cfg_ver:%d\n",sys_cfgs.cfg_ver); 
+		if(sys_cfgs.cfg_ver == CFG_VERSION_NUM) { /* same ver ! */
 			goto sys_cfg_load_end;
 		}
-		sys_cfgs.cfg_ver = CFG_VERSION_NUM;  //修改version
+		sys_cfgs.cfg_ver = CFG_VERSION_NUM;  //change version to same as flash version
     }
+
     if(sys_cfgs_tmp)
     {
-        memcpy(&sys_cfgs,sys_cfgs_tmp,sizeof(struct sys_config));
+        memcpy(&sys_cfgs,sys_cfgs_tmp,sizeof(struct sys_config)); /*Clear sys_cfgs*/
     }
     os_printf("use default params(%x).\r\n",sys_cfgs.cfg_ver);
     syscfg_set_default_val();
-    syscfg_save();
+    syscfg_save(); /* save to falsh */
 
 sys_cfg_load_end:
     if(sys_cfgs_tmp)
@@ -275,31 +281,36 @@ void user_sta_del(char *addr){
 void sta_ps_mode_enter(uint16 aid);
 void sta_ps_mode_exit(uint16 aid);
 void aid_to_mac(uint16 aid, uint8* mac);
-
 sysevt_hdl_res sysevt_wifi_event(uint32 event_id, uint32 data, uint32 priv){
     uint8 mac[6];
     switch(event_id&0xffff){
         case SYSEVT_WIFI_DISCONNECT:
 			aid_to_mac((uint16)data,mac);
 			user_sta_del((char *)mac);
+            g_wifi.is_connected = 0;
             break;
         case SYSEVT_WIFI_CONNECTTED:
 			aid_to_mac((uint16)data,mac);
 			user_sta_add((char *)mac);
+            g_wifi.is_connected = 1;
             break;
 		case SYSEVT_WIFI_STA_DISCONNECT:
 			aid_to_mac((uint16)data,mac);
 			user_sta_del((char *)mac);
+            g_wifi.is_connected = 0;
 			break;
 		case SYSEVT_WIFI_STA_CONNECTTED:
 			aid_to_mac((uint16)data,mac);
 			user_sta_add((char *)mac);			
+            g_wifi.is_connected = 1;
 			break;			
 		case SYSEVT_WIFI_STA_PS_START:
 			//sta_ps_mode_enter((uint16)data);
+            printf("sta into ps mode\r\n"); // dormancy mode
 			break;
 		case SYSEVT_WIFI_STA_PS_END:	
 			//sta_ps_mode_exit((uint16)data);
+            printf("sta put of ps mode\r\n"); // 
 			break;
 		case SYSEVT_WIFI_SCAN_DONE:
 			os_printf("scan down.......\r\n");
@@ -883,11 +894,38 @@ static int32 main_loop(struct os_work *work)
 	#endif
 #endif
 
+void tx_sys_init(void)
+{
+    uint8 vcam;
+    vcam = vcam_en();
+    // user_io_preconfig();
+    sys_event_init(32);
+    sys_event_take(SYS_EVENT(SYS_EVENT_WIFI, 0),sysevt_wifi_event,0);
+    sys_atcmd_init();
+    sys_wifi_init();
+    // enter wifi test mode
+    if(system_is_wifi_test_mode()) {
+        system_reboot_normal_mode();
+    } else {
+        sys_network_init();
+        //dsleep_test_init();
+        //udp_kalive_init("192.168.1.100", 60002, SYSTEM_SLEEP_TYPE_SRAM_WIFI, NULL);
+#if 1
+        hardware_init(vcam);
+#endif
+        app_network_init();
+        mcu_watchdog_timeout(5);
+        OS_WORK_INIT(&main_wk, main_loop, 0);
+        os_run_work_delay(&main_wk, 1000);
+    }
+}
+
 
 int main(void)
 {
     uint32 sysheap_freesize(struct sys_heap *heap);
     os_printf("freemem:%d\r\n",sysheap_freesize(&sram_heap));
+
 	#ifdef PSRAM_HEAP
 		while(!get_psram_status())
 		{
@@ -921,33 +959,22 @@ int main(void)
     #endif
 
 
-    uint8 vcam;
+
     //do_global_ctors();
     //wifi_qc_mode_inspect();
     //sys_watchdog_pre_init();
+
+    
     skbpool_init(SKB_POOL_ADDR, SKB_POOL_SIZE, 80, 0);
     sys_cfg_load();
-    vcam = vcam_en();
-    user_io_preconfig();
-    sys_event_init(32);
-    sys_event_take(SYS_EVENT(SYS_EVENT_WIFI, 0),sysevt_wifi_event,0);
-    sys_atcmd_init();
-    sys_wifi_init();
-    // enter wifi test mode
-    if(system_is_wifi_test_mode()) {
-        system_reboot_normal_mode();
+
+    if (tx_orl.tx_flag) {
+        tx_sys_init();
     } else {
-        sys_network_init();
-        //dsleep_test_init();
-        //udp_kalive_init("192.168.1.100", 60002, SYSTEM_SLEEP_TYPE_SRAM_WIFI, NULL);
-#if 1
-        hardware_init(vcam);
-#endif
-        app_network_init();
-        mcu_watchdog_timeout(5);
-        OS_WORK_INIT(&main_wk, main_loop, 0);
-        os_run_work_delay(&main_wk, 1000);
+        hali_access_main(); /*every each project use this to access*/
     }
+
+    
     pmu_clr_deadcode_pending();
     return 0;
 }

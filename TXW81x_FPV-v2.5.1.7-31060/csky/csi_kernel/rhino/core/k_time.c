@@ -22,6 +22,9 @@ void krhino_tick_proc(void)
     time_slice_update();
 #endif
 
+    /**
+     * if you want feed dog in your project, then you close this 
+     */
     mcu_watchdog_feed();
 }
 

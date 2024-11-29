@@ -16,7 +16,11 @@ enum psram_cfg_enum
     PSRAM_DEF(2MByte),
     PSRAM_DEF(4MByte),
     PSRAM_DEF(8MByte),
-	PSRAM_SELECT(4MByte),
+#if 1
+	PSRAM_SELECT(4MByte), 
+#else 
+    PSRAM_SELECT(8MByte), /* if you using the development board, choose this */
+#endif
 };
 
 

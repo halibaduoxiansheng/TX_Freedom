@@ -81,7 +81,7 @@
 #define WIFI_ACS_SCAN_TIME              150         //每个信道的扫描时间，单位ms
 #define WIFI_MAX_PS_CNT                 30           //底层为休眠sta缓存的帧最大数量。0代表sta休眠由umac全程管理，底层不缓存
 #define CHANNEL_DEFAULT                 0
-#define SSID_DEFAULT                    "HG-WIFI_"
+#define SSID_DEFAULT                    "HALIBADUO_"
 #define WIFI_TX_DUTY_CYCLE              80         //tx发送占空比，单位是%，范围是0~100
 #define WIFI_SSID_FILTER_EN             0           //是否使能SSID过滤功能。使能后，只有隐藏SSID和指定SSID的beacon才会上传
 #define WIFI_PREVENT_PS_MODE_EN         1           //是否尽可能的阻止sta进入休眠
@@ -91,14 +91,14 @@
 #define DHCP_START_IP_DEFAULT           0x6401A8C0  //192.168.1.100
 #define DHCP_END_IP_DEFAULT             0xFE01A8C0  //192.168.1.254
 ///////////////uart1////////////
-#define PIN_UART0_TX PA_12//PA_9
-#define PIN_UART0_RX 255
+#define PIN_UART0_TX PA_13 /* debug serial port */
+#define PIN_UART0_RX PA_12
 #define ATCMD_UARTDEV       HG_UART0_DEVID
 
 
 ///////////////uart4////////////
 #define PIN_UART4_TX 255
-#define PIN_UART4_RX PA_3
+#define PIN_UART4_RX 255
 
 #define PIN_PDM_MCLK PA_4
 #define PIN_PDM_DATA PA_3
@@ -271,7 +271,7 @@
 //#define WIFI_BRIDGE_DEV HG_GMAC_DEVID
 
 #define CUSTOM_PSRAM_SIZE   500*1024
-#define PSRAM_HEAP			//如果需要psram当作heap,需要打开这个宏
+#define PSRAM_HEAP			// if you want to use PSRMA, define it,or please do not define it
 
 //速率调整参数选择，默认是耳勺
 #define RATE_CONTROL_ERSHAO     1
@@ -284,7 +284,7 @@
 //#define LMAC_BGN_PCF
 			
 ///////////////ble enable////////////
-#define BLE_DEMO_MODE      0	//0:默认调用统一接口;
+#define BLE_DEMO_MODE      3	//0:默认调用统一接口;
 #define BLE_SUPPORT			1
 #endif
 #endif

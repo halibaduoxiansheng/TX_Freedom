@@ -333,11 +333,13 @@ int32 sys_ble_atcmd_blenc(const char *cmd, char *argv[], uint32 argc)
             case 1:
             case 2:
             case 3:
+			/*
                 if (ble_demo_start(bt_ops, mode - 1)) {
                     atcmd_error;
                 } else {
                     os_printf("\n\nset ble mode = %d \r\n\n", mode);
                 }
+			*/
                 break;
             default:
                 break;
