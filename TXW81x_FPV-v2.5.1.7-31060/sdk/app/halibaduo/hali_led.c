@@ -13,6 +13,20 @@ struct G_TX_LED red_led;
 struct G_TX_LED green_led;
 struct G_TX_LED camera_led;
 
+/**
+ * All button events are placed in this thread
+ */
+struct TX_LED_Thd {
+    void *thread;
+    uint16_t stack_size;
+    char stack_name[15];
+    uint8_t priority;
+    uint16_t interval;
+
+    void (*trd_func)(void);
+};
+struct TX_LED_Thd led_thd;
+
 enum{
 	OP_GET = 0,
 	OP_SET = 1,
@@ -280,12 +294,26 @@ void hali_led_hander(struct Double_link_list *target)
 }
 
 
-void hali_led_ticks(void)
+static void hali_led_thread(void *arg)
 {
     struct Double_link_list *target = NULL;
-    for (;;) {
-        for (target = tx_dlink_head->next; target != tx_dlink_tail; target = target->next) { // TODO 按钮，灯公用 多便利情况 后续优化
+    for (;;os_sleep_ms(led_thd.interval)) {
+        for (target = tx_dlink_head->next; target != tx_dlink_tail; target = target->next) {
             hali_led_hander(target);
         }
     }
+}
+
+void hali_led_ticks(void)
+{
+    memset(&led_thd, 0, sizeof(struct TX_LED_Thd));
+    memcpy(led_thd.stack_name, "led_task", strlen("led_task"));
+    led_thd = (struct TX_LED_Thd) {
+        .priority = 9,
+        .stack_size = 512,
+        .trd_func = hali_led_thread,
+        .interval = 200,
+    };
+    
+    csi_kernel_task_new((k_task_entry_t)led_thd.trd_func, led_thd.stack_name, NULL, led_thd.priority, 0, NULL, led_thd.stack_size, &led_thd.thread);
 }

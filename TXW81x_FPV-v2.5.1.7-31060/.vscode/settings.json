@@ -66,6 +66,7 @@
     "halibaduo.h": "c",
     "typeinfo": "c",
     "hali_energy.h": "c",
-    "hali_led.h": "c"
+    "hali_led.h": "c",
+    "functional": "c"
   }
 }

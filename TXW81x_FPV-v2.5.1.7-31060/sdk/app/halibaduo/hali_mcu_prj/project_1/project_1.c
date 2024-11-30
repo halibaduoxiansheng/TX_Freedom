@@ -66,17 +66,32 @@ static void hali_init(void)
 /**
  * Notice: powerOn and powerOff func name do not change if you ad a new project
  */
-void hali_powerOn(void) 
+
+static void hali_powerOn(void) 
 {
     tx_power.is_powerOn = 1;
     tx_power.is_powerOff = 0; 
 }
 
-void hali_powerOff(void)
+static void hali_powerOff(void)
 {
     //
     tx_power.is_powerOn = 0;
     tx_power.is_powerOff = 1;
+}
+
+void hali_long_press_func(void)
+{
+    if (tx_power.is_powerOn) {
+        hali_powerOff();
+    } else {
+        hali_powerOn();
+    }
+}
+
+void hali_short_press_func(void)
+{
+    printf("short press func do\r\n");
 }
 
 
@@ -114,52 +129,23 @@ void hali_led_program(void)
 	非充电中：
 		红、绿灯熄灭
 */
-static void led_func(void) // 50ms
-{
-    
-}
 
 /* =====  the following is the thread function  ===== */
-static void _mcu_task(void *arg)
-{
-    static uint8_t batter_get_time_num = 0;
-		
-	for(;;os_sleep_ms(50))
-	{   
-		batter_get_time_num++;
-		if(batter_get_time_num >= 50)
-		{
-            batter_get_time_num = 0;
-			// i4GetBatter();
-		}
-	}
+static void _led_task(void)
+{   
+    hali_led_program();
 }
 
-static void _led_task(void *arg)
+static void _button_task(void)
 {
-   hali_led_program();
-}
-
-static void _startup_task(void *arg)
-{
-    // i4TimerInit(); // every timer process in this
 	hali_powerButton_program();        
 }
 
 
 static void hali_thread_task(void)
 {
-	void *thread0;
-	void *thread1;
-    void *thread2;
-	
-	os_printf("csi_kernel_task_new _mcu_task and _led_task and _startup_task start\r\n");
-
-	csi_kernel_task_new((k_task_entry_t)_mcu_task		, "mcu_task_new",     NULL, 9, 0, NULL, 512, &thread0);
-	csi_kernel_task_new((k_task_entry_t)_led_task		, "led_task_new",     NULL, 9, 0, NULL, 512, &thread1);
-    csi_kernel_task_new((k_task_entry_t)_startup_task	, "startup_task_new", NULL, 9, 0, NULL, 2048, &thread2);
-	
-	os_printf("csi_kernel_task_new _mcu_task and _led_task and _startup_task end\r\n");
+    _button_task();
+    _led_task();
 }
 
 

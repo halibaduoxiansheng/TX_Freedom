@@ -23,8 +23,6 @@ struct G_TX_WIFI g_wifi;
 
 
 
-
-
 #if 0 // if you want use it ,you can open it and midify it to use ,it is very easy
 /**
  * Scan surrounding wifi at once, need some time to finish

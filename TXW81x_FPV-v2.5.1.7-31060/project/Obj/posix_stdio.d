@@ -39,9 +39,7 @@ Obj/posix_stdio.o: ../sdk/lib/posix/stdio.c sys_config.h project_config.h \
  ../sdk/include/lib/net/lwip/include/lwip/priv/memp_std.h \
  ../sdk/include/lib/net/lwip/include/lwip/priv/memp_priv.h \
  ../sdk/include/lib/net/lwip/include/lwip/priv/mem_priv.h \
- ../sdk/include/lib/net/lwip/include/lwip/inet.h \
- ../sdk/lib/fs/fatfs/osal_file.h ../sdk/lib/fs/fatfs/ff.h \
- ../sdk/lib/fs/fatfs/integer.h ../sdk/lib/fs/fatfs/ffconf.h
+ ../sdk/include/lib/net/lwip/include/lwip/inet.h
 
 sys_config.h:
 
@@ -160,11 +158,3 @@ project_config.h:
 ../sdk/include/lib/net/lwip/include/lwip/priv/mem_priv.h:
 
 ../sdk/include/lib/net/lwip/include/lwip/inet.h:
-
-../sdk/lib/fs/fatfs/osal_file.h:
-
-../sdk/lib/fs/fatfs/ff.h:
-
-../sdk/lib/fs/fatfs/integer.h:
-
-../sdk/lib/fs/fatfs/ffconf.h:

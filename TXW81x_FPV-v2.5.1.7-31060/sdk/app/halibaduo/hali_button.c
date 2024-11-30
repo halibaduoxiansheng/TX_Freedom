@@ -2,6 +2,17 @@
 
 
 
+struct TX_BUTTON_Thd {
+    void *thread;
+    uint16_t stack_size;
+    char stack_name[15];
+    uint8_t priority;
+    uint16_t interval;
+
+    void (*trd_func)(void);
+};
+struct TX_BUTTON_Thd button_thd;
+
 struct G_TX_Button tx_button_0; /* the first  button */
 
 enum {
@@ -50,8 +61,9 @@ void hali_button_register(void)
         .state = BUTTON_IDLE,
         .wait_time = 1000,
     };
-    extern void hali_powerOn(void);
-    button_func_register(tx_button_0, hali_powerOn, NULL);
+    extern void hali_long_press_func(void);
+    extern void hali_short_press_func(void);
+    button_func_register(tx_button_0, hali_short_press_func, hali_long_press_func);
 
     /* if you want add button ,please imitate the above */
 
@@ -157,13 +169,26 @@ void hali_button_hander(struct Double_link_list *target) // 5ms
 	}
 }
 
-
-void hali_button_ticks(void)
+static void hali_button_thread(void *arg)
 {
     struct Double_link_list *target = NULL;
     for (;;) {
-        for (target = tx_dlink_head->next; target != tx_dlink_tail; target = target->next) { // TODO 按钮，灯公用 多便利情况 后续优化
+        for (target = tx_dlink_head->next; target != tx_dlink_tail; target = target->next) { 
             hali_button_hander(target);
         }
     }
+}
+
+
+void hali_button_ticks(void)
+{
+    memset(&button_thd, 0, sizeof(struct TX_BUTTON_Thd));
+    memset(&button_thd, 0, sizeof(struct TX_BUTTON_Thd));
+    memcpy(button_thd.stack_name, "button_task", strlen("led_task"));
+    button_thd = (struct TX_BUTTON_Thd) {
+        .priority = 9,
+        .stack_size = 512,
+        .trd_func = hali_button_thread,
+        .interval = 200,
+    };
 }

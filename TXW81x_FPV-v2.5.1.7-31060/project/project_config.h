@@ -11,30 +11,30 @@
 
 #define DEFAULT_SYS_CLK   				(240*1000000) 
 
-#define USB_HOST_EN                     1
+#define USB_HOST_EN                     0//1
 #define MACBUS_USB
 #define BLE_PAIR_NET                    0
 #define WIRELESS_PAIR_CODE              0
 
 
 #define PRC_EN                          1
-#define OF_EN                           1
-#define USB_EN                          1
+#define OF_EN                           0//1
+#define USB_EN                          0//1
 #define DVP_EN                          1
 #define VPP_EN                          DVP_EN
 #define JPG_EN                         (1 && DVP_EN)
-#define LCD_EN			 				1
-#define SCALE_EN						1
-#define SDH_EN                          1
-#define FS_EN                           1
+#define LCD_EN			 				0//1
+#define SCALE_EN						0//1
+#define SDH_EN                          0//1
+#define FS_EN                           0//1
 #define SD_SAVE                         (0&&SDH_EN&&FS_EN&&JPG_EN)
 
 #define VCAM_EN                        (0 || DVP_EN)
 
-#define OPENDML_EN                      1
+#define OPENDML_EN                      0//1
 #define UART_FLY_CTRL_EN                0
 #define PWM_EN                          0
-#define KEY_MODULE_EN					1
+#define KEY_MODULE_EN					0//1
 
 
 #define AUDIO_EN                        0
@@ -47,7 +47,7 @@
 #define DCDC_EN                         0           //板子是否使用DCDC电路
 
 ///////////////wifi parameter////////////
-#define WIFI_RF_PWR_LEVEL               0           //选择WIFI功率。0：普通功率；1：比0的功率小；2：比1更小；10：大电流
+#define WIFI_RF_PWR_LEVEL               1//0           //选择WIFI功率。0：普通功率；1：比0的功率小；2：比1更小；10：大电流
 #define WIFI_RTS_THRESHOLD              1600        //RTS阈值，2304等效于不用RTS
 #define WIFI_RTS_MAX_RETRY              2           //RTS重试次数，范围为2~16
 #define WIFI_TX_MAX_RETRY               7           //最大传输次数，范围为1~31
@@ -94,6 +94,7 @@
 #define PIN_UART0_TX PA_13 /* debug serial port */
 #define PIN_UART0_RX PA_12
 #define ATCMD_UARTDEV       HG_UART0_DEVID
+#define HALIBADUO_IIC_SET   1
 
 
 ///////////////uart4////////////
@@ -181,6 +182,15 @@
 #define LCD_D23 255
 #endif
 
+
+#if HALIBADUO_IIC_SET // IIC
+#define PIN_IIC2_SCL PC_2//PA_11//
+#define PIN_IIC2_SDA PC_3//PA_8//
+
+#define PIN_IIC1_SCL 255
+#define PIN_IIC1_SDA 255
+
+#endif
 
 /*---------------------------------------*/
 /*---------SDH PIN DEFINITION------------*/

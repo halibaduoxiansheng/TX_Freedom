@@ -894,6 +894,26 @@ static int32 main_loop(struct os_work *work)
 	#endif
 #endif
 
+sysevt_hdl_res sysevt_ble_event(uint32 event_id, uint32 data, uint32 priv){
+    uint8 mac[6];
+    switch(event_id & 0xffff){		
+		case SYSEVT_BLE_CONNECTED:
+			printf("scan SYSEVT_BLE_CONNECTED.......\r\n");
+			printf("ble connected");
+			break;
+		case SYSEVT_BLE_DISCONNECT:	
+			printf("scan SYSEVT_BLE_DISCONNECT.......\r\n");
+			break;
+		case SYSEVT_BLE_NETWORK_CONFIGURED:
+			printf("scan SYSEVT_BLE_NETWORK_CONFIGURED.......\r\n");
+			break;
+        default:
+            printf("no this event(%x)...\r\n", event_id);
+            break;
+    }
+    return SYSEVT_CONTINUE;
+}
+
 void tx_sys_init(void)
 {
     uint8 vcam;
@@ -901,7 +921,11 @@ void tx_sys_init(void)
     // user_io_preconfig();
     sys_event_init(32);
     sys_event_take(SYS_EVENT(SYS_EVENT_WIFI, 0),sysevt_wifi_event,0);
+    sys_event_take(SYS_EVENT(SYS_EVENT_BLE, 0),sysevt_ble_event,0);
     sys_atcmd_init();
+
+    sys_cfgs.wifi_mode = WIFI_MODE_STA;
+
     sys_wifi_init();
     // enter wifi test mode
     if(system_is_wifi_test_mode()) {
@@ -914,7 +938,12 @@ void tx_sys_init(void)
         hardware_init(vcam);
 #endif
         app_network_init();
-        mcu_watchdog_timeout(5);
+        mcu_watchdog_timeout(20);
+        mcu_watchdog_feed();
+
+        close_wifi();
+        open_wifi();
+
         OS_WORK_INIT(&main_wk, main_loop, 0);
         os_run_work_delay(&main_wk, 1000);
     }

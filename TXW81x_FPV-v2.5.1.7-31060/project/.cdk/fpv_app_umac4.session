@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Session Name="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\project\fpv_app_umac4.cdkws">
-  <int Value="8" Name="m_selectedTab"/>
+  <int Value="12" Name="m_selectedTab"/>
   <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\project\fpv_app_umac4.cdkws" Name="m_workspaceName"/>
   <TabInfoArray Name="TabInfoArray">
     <TabInfo>
       <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\project\main.c" Name="FileName"/>
-      <int Value="953" Name="FirstVisibleLine"/>
-      <int Value="964" Name="CurrentLine"/>
+      <int Value="279" Name="FirstVisibleLine"/>
+      <int Value="289" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
@@ -20,7 +20,7 @@
     <TabInfo>
       <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_mcu_prj\project_1\project_1.h" Name="FileName"/>
       <int Value="0" Name="FirstVisibleLine"/>
-      <int Value="15" Name="CurrentLine"/>
+      <int Value="13" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
@@ -33,8 +33,8 @@
     </TabInfo>
     <TabInfo>
       <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_mcu_prj\project_1\project_1.c" Name="FileName"/>
-      <int Value="83" Name="FirstVisibleLine"/>
-      <int Value="94" Name="CurrentLine"/>
+      <int Value="22" Name="FirstVisibleLine"/>
+      <int Value="33" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
@@ -55,14 +55,42 @@
     <TabInfo>
       <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_button.c" Name="FileName"/>
       <int Value="80" Name="FirstVisibleLine"/>
-      <int Value="90" Name="CurrentLine"/>
+      <int Value="88" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
       <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_led.c" Name="FileName"/>
-      <int Value="112" Name="FirstVisibleLine"/>
-      <int Value="123" Name="CurrentLine"/>
+      <int Value="72" Name="FirstVisibleLine"/>
+      <int Value="96" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_wifi.c" Name="FileName"/>
+      <int Value="1" Name="FirstVisibleLine"/>
+      <int Value="1" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\halibaduo.c" Name="FileName"/>
+      <int Value="36" Name="FirstVisibleLine"/>
+      <int Value="45" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_network.c" Name="FileName"/>
+      <int Value="229" Name="FirstVisibleLine"/>
+      <int Value="239" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="E:\Halibaduo_TX\TXW81x_FPV-v2.5.1.7-31060\sdk\lib\common\atcmd.c" Name="FileName"/>
+      <int Value="325" Name="FirstVisibleLine"/>
+      <int Value="341" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
