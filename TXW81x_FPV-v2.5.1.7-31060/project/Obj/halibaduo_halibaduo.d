@@ -64,7 +64,8 @@ Obj/halibaduo_halibaduo.o: ../sdk/app/halibaduo/halibaduo.c \
  ../sdk/app/spook/spook_config.h ../sdk/app/socketModule/socket_module.h \
  ../sdk/include/dev/csi/hgdvp.h ../sdk/include/hal/dvp.h \
  ../sdk/app/halibaduo/hali_network.h \
- ../sdk/app/halibaduo/hali_list_node.h
+ ../sdk/app/halibaduo/hali_list_node.h \
+ ../sdk/app/halibaduo/hali_picture.h
 
 ../sdk/app/halibaduo/halibaduo.h:
 
@@ -263,3 +264,5 @@ syscfg.h:
 ../sdk/app/halibaduo/hali_network.h:
 
 ../sdk/app/halibaduo/hali_list_node.h:
+
+../sdk/app/halibaduo/hali_picture.h:

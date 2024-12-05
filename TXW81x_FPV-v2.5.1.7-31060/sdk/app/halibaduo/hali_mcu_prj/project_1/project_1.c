@@ -12,6 +12,7 @@
 #include "hali_list_node.h"
 #include "hali_energy.h"
 #include "hali_led.h"
+#include "hali_wifi.h"
 
 
 
@@ -62,6 +63,8 @@ static void hali_init(void)
     hali_led_register();
     hali_energy_register();
     hali_network_register();
+    hali_picture_register();
+    hali_wifiInfo_register((void*)&sys_cfgs);
 
     hali_gpio_init();
 }
@@ -75,13 +78,15 @@ void hali_powerOn(void)
 {
     tx_power.is_powerOn = 1;
     tx_power.is_powerOff = 0; 
+    powerOn_mcu();
 
     tx_sys_init(); // system init
 
 
-#if I4S_AUTO_BLE
-	extern void i4s_ble_auto_for_project(void);
-	i4s_ble_auto_for_project();
+
+#if TX_AUTO_BLE
+	extern void tx_ble_auto_for_project(void);
+	tx_ble_auto_for_project();
 #endif
 }
 
@@ -90,10 +95,11 @@ void hali_powerOff(void)
     //
     tx_power.is_powerOn = 0;
     tx_power.is_powerOff = 1;
+    powerOff_mcu();
 
-#if I4S_AUTO_BLE
-	extern void i4s_ble_auto_for_project(void);
-	i4s_ble_auto_for_project();
+#if TX_AUTO_BLE
+	extern void tx_ble_auto_for_project(void);
+	tx_ble_auto_for_project();
 #endif
 }
 
@@ -121,6 +127,7 @@ static void hali_powerButton_program(void)
 static void hali_led_program(void)
 {
     hali_led_ticks();
+    hali_led_define_youself();
 }
 
 static void hali_net_program(void)
@@ -128,29 +135,12 @@ static void hali_net_program(void)
     hali_network_thread_start();
 }
 
-/*开机：
-开机：
-	充电中：
-		未充满：
-			wifi未连接：绿灯慢闪、红灯常亮
-			wifi已连接：绿灯常亮、红灯常亮
-		已充满：
-			wifi未连接：绿灯慢闪、红灯熄灭
-			wifi已连接：绿灯常亮、红灯熄灭
-	非充电中：
-		非低电：
-			wifi未连接：绿灯慢闪、红灯熄灭
-			wifi已连接：绿灯常亮、红灯熄灭
-		低电：
-			wifi未连接：绿灯慢闪、红灯快闪
-			wifi已连接：绿灯常亮、红灯快闪
-关机：
-	充电中：
-		未充满：绿灯熄灭，红灯常亮
-		已充满：红、绿熄灭
-	非充电中：
-		红、绿灯熄灭
-*/
+static void hali_pic_program(void)
+{
+    hali_pic_thread_start();
+}
+
+
 
 /* =====  the following is the thread function  ===== */
 static void _led_task(void)
@@ -168,11 +158,17 @@ static void _net_task(void)
     hali_net_program();
 }
 
+static void _pic_task(void)
+{
+    hali_pic_program();
+}
+
 static void hali_thread_task(void)
 {
     _button_task();
     _led_task();
     _net_task();
+    _pic_task();
 }
 
 

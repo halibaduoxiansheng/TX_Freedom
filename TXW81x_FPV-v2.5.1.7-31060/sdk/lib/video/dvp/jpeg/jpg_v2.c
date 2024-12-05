@@ -14,6 +14,8 @@
 #include "openDML.h"
 #include "osal/mutex.h"
 #include "custom_mem/custom_mem.h" 
+
+#include "../../../../app/halibaduo/halibaduo.h"
 //#include "media.h"
 //#include "lib/common/common.h"
 
@@ -661,6 +663,8 @@ void jpg_outbuff_full_isr(uint32 irq_flag,uint32 irq_data,uint32 param1,uint32 p
 	}else{
 		jpg_chose = 1;
 	}
+
+	sensor_ols.offline_flag = 0;
 	
 	
 	if(outbuff_isr[jpg_chose] != 0xff)
@@ -706,8 +710,11 @@ void jpg_buf_err(uint32 irq_flag,uint32 irq_data,uint32 param1,uint32 param2){
 		jpg_chose = 0;
 	}else{
 		jpg_chose = 1;
-	}	
+	}
 	jpg_close(p_jpg);
+
+	sensor_ols.offline_flag =0;
+
 	if(jpg_chose == 0)
 		scale_close(scale_dev);
 //	dvp_close(dvp_test);	
@@ -776,6 +783,7 @@ void jpg_done_isr(uint32 irq_flag,uint32 irq_data,uint32 param1,uint32 param2){
 		jpg_chose = 1;
 	}	
 	
+	sensor_ols.offline_flag = 0;
 	
 	jpg_len = param1;//jpg_get_len(p_jpg);
 	//os_printf("len(%d)=>:%d ",jpg_chose,jpg_len);

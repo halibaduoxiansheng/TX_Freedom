@@ -11,6 +11,8 @@
 #include "lib/lcd/lcd.h"
 #include "hal/jpeg.h"
 
+#include "../../../../app/halibaduo/halibaduo.h"
+
 
 #if DVP_EN
 
@@ -1006,11 +1008,7 @@ static _Sensor_Adpt_ * sensorAutoCheck(struct i2c_device *p_iic,uint8 *init_buf)
 		{
 			os_printf("id =%x num:%d \n",devSensorInitTable[i]->id,i);
 			devSensorInit = (_Sensor_Ident_ *) devSensorInitTable[i];
-//#if CMOS_AUTO_LOAD
-//			devSensor_Struct = sensor_adpt_load(devSensorInit->id,devSensorInit->w_cmd,devSensorInit->r_cmd,init_buf);
-//#else
 			devSensor_Struct = (_Sensor_Adpt_ *) devSensorOPTable[i];
-//#endif
 			break;
 		}
 	}
@@ -1018,8 +1016,10 @@ static _Sensor_Adpt_ * sensorAutoCheck(struct i2c_device *p_iic,uint8 *init_buf)
 	{
 		os_printf("Er: unkown!");
 		devSensorInit = (_Sensor_Ident_ *)&null_init;
+		sensor_ols.offline_flag = 1;
 		return NULL; // index 0 is test only
 	}
+	
 	return devSensor_Struct;
 }
 

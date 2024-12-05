@@ -65,7 +65,8 @@ Obj/halibaduo_hali_network.o: ../sdk/app/halibaduo/hali_network.c \
  ../sdk/include/dev/csi/hgdvp.h ../sdk/include/hal/dvp.h \
  ../sdk/app/halibaduo/halibaduo.h ../sdk/app/halibaduo/hali_list_node.h \
  ../sdk/app/halibaduo/hali_energy.h ../sdk/app/halibaduo/hali_ota.h \
- ../sdk/app/halibaduo/hali_led.h
+ ../sdk/app/halibaduo/hali_led.h ../sdk/app/halibaduo/hali_picture.h \
+ ../sdk/app/halibaduo/hali_wifi.h
 
 ../sdk/app/halibaduo/hali_network.h:
 
@@ -270,3 +271,7 @@ syscfg.h:
 ../sdk/app/halibaduo/hali_ota.h:
 
 ../sdk/app/halibaduo/hali_led.h:
+
+../sdk/app/halibaduo/hali_picture.h:
+
+../sdk/app/halibaduo/hali_wifi.h:

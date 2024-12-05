@@ -60,6 +60,7 @@ struct Double_link_list* double_button_link_insert(struct Double_link_list *head
 	if (head->next == NULL && tail->prev == NULL) { 
 		node = (struct Double_link_list*)malloc(sizeof(struct Double_link_list)); // the new add node
 		if (node == NULL) {
+			printf("malloc node failed\r\n");
 			return NULL;
 		}
 		head->next = node;
@@ -73,6 +74,7 @@ struct Double_link_list* double_button_link_insert(struct Double_link_list *head
 			node->button = data;
 		}
 	} else {
+		node = (struct Double_link_list*)malloc(sizeof(struct Double_link_list)); // the new add node
 		while(temp->next != tail) { // find the last one
 			temp = temp->next;
 		}

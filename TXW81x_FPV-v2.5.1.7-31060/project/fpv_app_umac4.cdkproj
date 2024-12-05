@@ -4931,7 +4931,13 @@ Board: txw81x
         <File Name="../sdk/app/halibaduo/hali_wifi.c">
           <FileOption/>
         </File>
-        <File Name="../sdk/app/halibaduo/hali_wifi.h"/>
+        <File Name="../sdk/app/halibaduo/hali_wifi.h">
+          <FileOption/>
+        </File>
+        <File Name="../sdk/app/halibaduo/hali_picture.c">
+          <FileOption/>
+        </File>
+        <File Name="../sdk/app/halibaduo/hali_picture.h"/>
       </VirtualDirectory>
     </VirtualDirectory>
   </VirtualDirectory>

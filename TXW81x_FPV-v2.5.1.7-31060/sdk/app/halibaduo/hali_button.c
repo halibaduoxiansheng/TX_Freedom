@@ -183,14 +183,16 @@ static void hali_button_thread(void *arg)
 
 void hali_button_ticks(void)
 {
+    mcu_watchdog_feed();
     memset(&button_thd, 0, sizeof(struct TX_BUTTON_Thd));
     memcpy(button_thd.stack_name, "button_task", strlen("led_task"));
     button_thd = (struct TX_BUTTON_Thd) {
         .priority = 9,
-        .stack_size = 512,
+        .stack_size = 1024,
         .trd_func = hali_button_thread,
         .interval = 200,
         .args = NULL,
     };
+    printf("button task want to run\r\n");
     csi_kernel_task_new((k_task_entry_t)button_thd.trd_func, button_thd.stack_name, button_thd.args, button_thd.priority, 0, NULL, button_thd.stack_size, &button_thd.thread);
 }

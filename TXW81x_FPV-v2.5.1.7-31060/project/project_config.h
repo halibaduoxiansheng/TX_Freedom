@@ -17,7 +17,7 @@
 #define WIRELESS_PAIR_CODE              0
 
 
-#define PRC_EN                          1
+#define PRC_EN                          0//1
 #define OF_EN                           0//1
 #define USB_EN                          0//1
 #define DVP_EN                          1
@@ -94,9 +94,7 @@
 #define PIN_UART0_TX PA_13 /* debug serial port */
 #define PIN_UART0_RX PA_12
 #define ATCMD_UARTDEV       HG_UART0_DEVID
-#define HALIBADUO_IIC_SET   1
-
-
+#endif
 ///////////////uart4////////////
 #define PIN_UART4_TX 255
 #define PIN_UART4_RX 255//PA_3
@@ -130,40 +128,15 @@
 #define DE_ERD 255//PA_2
 #define VS_CS  255//PC_5
 #define HS_DC  255//PA_11
-#if (LCD_ST7701S_EN == 1)
-#define LCD_D0 PA_7
-#define LCD_D1 PA_1
-#define LCD_D2 PA_12
-#define LCD_D3 PA_13
-#define LCD_D4 PA_14
-#define LCD_D5 PC_13
-#define LCD_D6 PC_14
-#define LCD_D7 PC_15
-#define LCD_D8 PA_4
-#define LCD_D9 PA_5
-#define LCD_D10 PA_6
-#define LCD_D11 PC_8
-#define LCD_D12 PC_9
-#define LCD_D13 PC_10
-#define LCD_D14 PC_11
-#define LCD_D15 PC_12
-#define LCD_D16 255
-#define LCD_D17 255
-#define LCD_D18 255
-#define LCD_D19 255
-#define LCD_D20 255
-#define LCD_D21 255
-#define LCD_D22 255
-#define LCD_D23 255 
-#else
-#define LCD_D0 PC_8
-#define LCD_D1 PC_9
-#define LCD_D2 PC_10
-#define LCD_D3 PC_11
-#define LCD_D4 PC_12
-#define LCD_D5 PC_13
-#define LCD_D6 PC_14
-#define LCD_D7 PC_15
+
+#define LCD_D0 255//PC_8
+#define LCD_D1 255//PC_9
+#define LCD_D2 255//PC_10
+#define LCD_D3 255//PC_11
+#define LCD_D4 255//PC_12
+#define LCD_D5 255//PC_13
+#define LCD_D6 255//PC_14
+#define LCD_D7 255//PC_15
 #define LCD_D8 255
 #define LCD_D9 255
 #define LCD_D10 255
@@ -180,17 +153,8 @@
 #define LCD_D21 255
 #define LCD_D22 255
 #define LCD_D23 255
-#endif
 
 
-#if HALIBADUO_IIC_SET // IIC
-#define PIN_IIC2_SCL PC_2//PA_11//
-#define PIN_IIC2_SDA PC_3//PA_8//
-
-#define PIN_IIC1_SCL 255
-#define PIN_IIC1_SDA 255
-
-#endif
 
 /*---------------------------------------*/
 /*---------SDH PIN DEFINITION------------*/
@@ -206,14 +170,28 @@
 
 
 ///////////////IIC2/////////////
+#if (EW36_V01_IO_SET == 1)
+
+#define PIN_IIC2_SCL PC_3	//EW36
+#define PIN_IIC2_SDA PC_2	//EW36
+
+#define PIN_IIC1_SCL PA_3
+#define PIN_IIC1_SDA PA_4
+
+#else
+
 #define PIN_IIC2_SCL PC_2//PA_11//
 #define PIN_IIC2_SDA PC_3//PA_8//
 
-#define PIN_IIC1_SCL 255
-#define PIN_IIC1_SDA 255
+#define PIN_IIC1_SCL PA_4//PA_13
+#define PIN_IIC1_SDA PA_5//PA_12
+
+#endif
 
 
-
+// 下面是BLA_1621 吸鼻器 使用的
+// #define  MOTO_AIN1_PIN	 PA_7// HALIBADUO_TEST PWM PC_7
+// #define PIN_PWM_CHANNEL_0 MOTO_AIN1_PIN
 
 
 //#define  MOTO_AIN1_PIN	 PB_7
@@ -281,7 +259,7 @@
 //#define WIFI_BRIDGE_DEV HG_GMAC_DEVID
 
 #define CUSTOM_PSRAM_SIZE   500*1024
-#define PSRAM_HEAP			// if you want to use PSRMA, define it,or please do not define it
+//#define PSRAM_HEAP			// if you want to use PSRMA, define it,or please do not define it
 
 //速率调整参数选择，默认是耳勺
 #define RATE_CONTROL_ERSHAO     1
@@ -296,7 +274,7 @@
 ///////////////ble enable////////////
 #define BLE_DEMO_MODE      3	//0:默认调用统一接口;
 #define BLE_SUPPORT			1
-#define	I4S_AUTO_BLE 	    1 // 蓝牙自动连接
+#define	TX_AUTO_BLE 	    1 // 蓝牙自动连接
 
 #endif
-#endif
+

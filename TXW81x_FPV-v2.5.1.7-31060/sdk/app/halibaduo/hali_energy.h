@@ -152,12 +152,13 @@ struct G_TX_Power{
     uint8_t need_remind_battery:1;
     uint8_t need_powerOff_battery:1;
     uint8_t power_charging_level:1;
-    uint8_t reserve:1;
+    uint8_t is_full:1;
 
     // uint8_t basic_unit; // ms
     uint16_t detect_interval;
 
     uint8_t mcu_io;
+    uint8_t mcu_work_level;
     uint8_t adc_io;
     uint8_t charging_io;
 
@@ -186,6 +187,8 @@ struct G_TX_Power{
 }__attribute__((packed));
 
 
+void powerOn_mcu(void);
+void powerOff_mcu(void);
 
 void hali_energy_register(void);
 extern struct G_TX_Power tx_power;

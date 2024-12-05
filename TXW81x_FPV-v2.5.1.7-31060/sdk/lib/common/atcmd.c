@@ -324,7 +324,7 @@ int32 sys_ble_atcmd_blenc(const char *cmd, char *argv[], uint32 argc)
         mode = os_atoi(argv[0]);
         switch (mode) {
             case 0:
-                if (ble_demo_stop(bt_ops)) {
+                if (tx_ble_stop(bt_ops)) {
                     atcmd_error;
                 } else {
                     os_printf("\n\nble close \r\n\n");

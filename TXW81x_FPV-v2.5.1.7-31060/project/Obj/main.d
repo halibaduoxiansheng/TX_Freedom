@@ -118,6 +118,7 @@ Obj/main.o: main.c sys_config.h project_config.h \
  ../sdk/app/algorithm/stream_frame/stream_frame.h \
  ../sdk/app/algorithm/stream_frame/stream_define.h \
  ../sdk/app/test_demo/test_demo.h atcmd.c ../sdk/lib/key/keyWork.h \
+ ../sdk/include/lib/ble/ble_demo.h \
  ../sdk/app/../app/halibaduo/halibaduo.h \
  ../sdk/app/../app/halibaduo/halibaduo_lib.h syscfg.h \
  ../sdk/include/chip/txw81x/pin_names.h \
@@ -129,7 +130,8 @@ Obj/main.o: main.c sys_config.h project_config.h \
  ../sdk/app/../app/halibaduo/hali_network.h \
  ../sdk/app/../app/halibaduo/halibaduo.h \
  ../sdk/app/../app/halibaduo/hali_list_node.h \
- ../sdk/app/../app/halibaduo/hali_wifi.h
+ ../sdk/app/../app/halibaduo/hali_wifi.h \
+ ../sdk/app/../app/halibaduo/hali_energy.h
 
 sys_config.h:
 
@@ -459,6 +461,8 @@ atcmd.c:
 
 ../sdk/lib/key/keyWork.h:
 
+../sdk/include/lib/ble/ble_demo.h:
+
 ../sdk/app/../app/halibaduo/halibaduo.h:
 
 ../sdk/app/../app/halibaduo/halibaduo_lib.h:
@@ -494,3 +498,5 @@ syscfg.h:
 ../sdk/app/../app/halibaduo/hali_list_node.h:
 
 ../sdk/app/../app/halibaduo/hali_wifi.h:
+
+../sdk/app/../app/halibaduo/hali_energy.h:

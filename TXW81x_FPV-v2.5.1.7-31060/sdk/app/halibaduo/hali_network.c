@@ -3,6 +3,8 @@
 #include "hali_energy.h"
 #include "hali_ota.h"
 #include "hali_led.h"
+#include "hali_picture.h"
+#include "hali_wifi.h"
 
 
 enum Con_Type{
@@ -28,6 +30,43 @@ struct G_TX_License {
 };
 struct G_TX_License g_lic;
 
+
+enum{
+	EVT_TYPE_EAR = 1,
+	EVT_TYPE_EAR_V2	= 2,	
+};
+
+enum {
+	CPRO_DEVINFO_GET 	= 1,
+	CPRO_LIC_GET = 2,
+	CPRO_LIC_SET = 3,
+	CPRO_OPEN_VIDEO = 4,
+	CPRO_CLOSE_VEIDEO = 5,
+	CPRO_UPDATE_START = 6,
+	CPRO_UPDATE_DATA = 7,
+	CPRO_UPDATE_END = 8,
+	CPRO_EVENT_NOTIFY = 9,
+	CPRO_LED_CONTROL = 10,
+	CPRO_NAK_HANDLE = 11,
+	CPRO_COMMON_CONTROL = 12, //add by zhangwei 20210714
+	CPRO_CAMERACONFALL_GET = 13,
+	CPRO_CAMERACONF_SET = 14,
+	CPRO_NOTIFYPORT_SET = 15,
+	CPRO_EXPOSURE_GET = 16,
+	CPRO_EXPOSURE_SET = 17,
+	CPRO_PARAMETER_GET = 18,
+	CPRO_PARAMETER_SET = 19,
+	CPRO_CHANG_EVENT_PORT = 20,
+	CPRO_LOWPOWERMODE = 21,
+	CPRO_OPEN_VIDEO_GRAB = 22,
+	CPRO_UPDATEMCU_START = 23,
+	CPRO_UPDATEMCU_DATA = 24,
+	CPRO_UPDATEMCU_END = 25,
+	CPRO_DATA_SET = 26,
+	CPRO_RECORD_STATUS_SYNC = 27,
+
+};
+
 #define HALI_BUF_SIZE 1024
 #define MAGIC_HEADER 0xffeeffee
 struct G_TX_NET { // use IPV4 
@@ -49,9 +88,11 @@ struct G_TX_NET { // use IPV4
 
     char name[10];
     
-    void (*thread_func)(struct G_TX_NET *, void *);
+    void (*thread_func)(void *);
 }__attribute__((packed));
 struct G_TX_NET tx_net_0;
+struct G_TX_NET tx_net_1;
+struct G_TX_NET tx_net_2;
 
 struct cProDevInfo{ /* although many member variables are redundant, but in order to adapt, we should keep it */
 	uint8_t type;
@@ -80,6 +121,25 @@ struct cProDevInfo{ /* although many member variables are redundant, but in orde
 	uint8_t picchangeid :4;
 }__attribute__((__packed__));
 
+struct eventSetEar{
+	uint8_t type;
+	uint8_t isCharge 		:1;
+	uint8_t battery			:7;
+	uint8_t isSensorOk		:1;
+	uint8_t isLowPowerOff	:7;
+	uint8_t workMode;		//add by zhangwei 20210728 for ypc c3 mode must > 1
+	int8_t motorOnOff;		//add by zhangwei 20210729 for ypc c3 motor on off notify
+	uint8_t picbutton  :4;
+	uint8_t videobutton :4;
+	uint8_t zoomdown :4;
+	uint8_t zoomup :4;
+	uint8_t mac[2];
+	uint8_t frozen:4; 	//frozee button
+	uint8_t mirror:4;	//mirror button
+	uint8_t reserverd[7];
+}__attribute__((__packed__));
+
+volatile uint16_t lseqNo = 0;
 
 
 /**
@@ -90,50 +150,16 @@ struct cProHeader {
 	uint16_t 	seqNo;
 	uint16_t 	cid; /*Connection ID*/
 	int8_t 		reFlag;	/* return flag 0: ok !=0 something error */
+    int8_t 		ackNeed;	/* command */
 	uint16_t 	len;  /* body data size */
 };
 #define CPRO_HDR_SIZE sizeof(struct cProHeader)
-
-struct cProBody {
-    // 
-};
-
-enum {
-	CPRO_DEVINFO_GET 	= 1,
-	CPRO_LIC_GET = 2,
-	CPRO_LIC_SET = 3,
-	CPRO_OPEN_VIDEO = 4,
-	CPRO_CLOSE_VEIDEO = 5,
-	CPRO_UPDATE_START = 6,
-	CPRO_UPDATE_DATA = 7, // updating
-	CPRO_UPDATE_END = 8,
-	CPRO_EVENT_NOTIFY = 9,
-	CPRO_LED_CONTROL = 10,
-	CPRO_NAK_HANDLE = 11,
-	CPRO_COMMON_CONTROL = 12, //add by zhangwei 20210714
-	CPRO_CAMERACONFALL_GET = 13,
-	CPRO_CAMERACONF_SET = 14,
-	CPRO_NOTIFYPORT_SET = 15,
-	CPRO_EXPOSURE_GET = 16,
-	CPRO_EXPOSURE_SET = 17,
-	CPRO_PARAMETER_GET = 18,
-	CPRO_PARAMETER_SET = 19,
-	CPRO_CHANG_EVENT_PORT = 20,
-	CPRO_LOWPOWERMODE = 21,
-	CPRO_OPEN_VIDEO_GRAB = 22,
-	CPRO_UPDATEMCU_START = 23,
-	CPRO_UPDATEMCU_DATA = 24,
-	CPRO_UPDATEMCU_END = 25,
-	CPRO_DATA_SET = 26,
-	CPRO_RECORD_STATUS_SYNC = 27,
-
-};
 
 
 /**
  * protocol func write here, if user want add some protocol or modify somewhere , is there
  */
-uint8_t app_deal_set_license(uint8_t *buffer, int size) // param0: body data, param1: body data size
+static uint8_t app_deal_set_license(uint8_t *buffer, int size) // param0: body data, param1: body data size
 {
     uint8_t ret = 0;
     if (buffer == NULL || size <= 0) {
@@ -151,7 +177,7 @@ uint8_t app_deal_set_license(uint8_t *buffer, int size) // param0: body data, pa
     return 0;
 }
 
-uint8_t app_deal_get_licnese(uint8_t *buffer, int *size) // param0: body data, param1: rev all size
+static uint8_t app_deal_get_licnese(uint8_t *buffer, int *size) // param0: body data, param1: rev all size
 {
     uint8_t ret = 0;
     if (buffer == NULL || *size <= 0) {
@@ -184,7 +210,7 @@ uint8_t app_deal_get_licnese(uint8_t *buffer, int *size) // param0: body data, p
     return 0;
 }
 
-uint8_t app_deal_get_devinfo(uint8_t *buffer, int *size, struct sockaddr_in *addr) // param0: data buffer, param1: rev all size param2: client addr pointer
+static uint8_t app_deal_get_devinfo(uint8_t *buffer, int *size, struct sockaddr_in *addr) // param0: data buffer, param1: rev all size param2: client addr pointer
 {
     if (buffer == NULL || *size < 0 || addr == NULL ) {
         printf("FUN:%s -> someone of args is invail\r\n",__FUNCTION__);
@@ -214,10 +240,12 @@ uint8_t app_deal_get_devinfo(uint8_t *buffer, int *size, struct sockaddr_in *add
     // info->usedbyotherapp = // TODO 
 
     *size = sizeof(struct cProDevInfo);
+    pic_client_info_exist_check(addr);
+
     return 0;
 }
 
-uint8_t app_deal_upgrade(uint8_t cid, uint8_t *buffer, int size) // param0: request ID, param1: rev all data,param2: rev all data size
+static uint8_t app_deal_upgrade(uint8_t cid, uint8_t *buffer, int size) // param0: request ID, param1: rev all data,param2: rev all data size
 {
     if (buffer == NULL || size <= sizeof(struct cProHeader) || cid < 0) {
         printf("someone args is invail,please check it\r\n");
@@ -244,7 +272,7 @@ uint8_t app_deal_upgrade(uint8_t cid, uint8_t *buffer, int size) // param0: requ
     return 0;
 }
 
-uint8_t app_deal_control_led(uint8_t *buffer, int *size)
+static uint8_t app_deal_control_led(uint8_t *buffer, int *size)
 {
     uint8_t ret = 0;
     if (buffer == NULL || *size < 0) {
@@ -256,7 +284,7 @@ uint8_t app_deal_control_led(uint8_t *buffer, int *size)
     return ret;
 }
 
-uint8_t app_deal_nak_handle(uint8_t *buffer, int size)
+static uint8_t app_deal_nak_handle(uint8_t *buffer, int size)
 {
     if (buffer == NULL || size < 0) {
         printf("app_deal_nak_handle error\r\n");
@@ -266,7 +294,7 @@ uint8_t app_deal_nak_handle(uint8_t *buffer, int size)
     return 0;
 }
 
-uint8_t app_deal_common_control(uint8_t *buffer, int *size)
+static uint8_t app_deal_common_control(uint8_t *buffer, int *size)
 {
     if (buffer == NULL || *size < 0) {
         printf("app_deal_common_control error\r\n");
@@ -276,7 +304,7 @@ uint8_t app_deal_common_control(uint8_t *buffer, int *size)
     return 0;
 }
 
-uint8_t app_recoder_status_set(uint8_t *buffer, int *size)
+static uint8_t app_recoder_status_set(uint8_t *buffer, int *size)
 {
     if (buffer == NULL || *size < 0) {
         printf("app_recoder_status_set error\r\n");
@@ -286,23 +314,74 @@ uint8_t app_recoder_status_set(uint8_t *buffer, int *size)
     return 0;
 }
 
+// TODO 出图卡顿问题 十分有可能出现在这个地方
+static int app_deal_open_video(int sockfd, struct sockaddr_in *addr, uint8_t *payload, uint8_t force_grab)
+{
+	uint16_t port = 0;
+	struct jpg_device *jpeg_dev;
+	
+	if(!addr){
+		return 1;
+	}
+	
+	if(tx_pic->open_flag == 0) {
+		
+    } else {
+		if(tx_camera_offline_check() == 0)
+		{
+			hali_video_close();	
+            tx_pic->open_flag = 0;
+		}
+	}
+	
+	__disable_irq();
+	g_wifi.connect_sock = sockfd;
+    pic_client_info_exist_check(addr);
+	if(payload){
+		os_memcpy(&port, payload, sizeof(uint16_t));
+		g_wifi.port = htons(port);
+	}
+	__enable_irq();
 
+	printf("pic port:%d\r\n", g_wifi.port);	
+
+	if(tx_camera_offline_check() == 0)
+	{
+		jpg_recfg(0);
+		jpg_start(0);
+		hali_video_open();
+        tx_pic->open_flag = 1;
+	}
+
+	return 0;
+}
+
+uint8_t app_deal_close_video(struct sockaddr_in *addr)
+{
+    if (addr == NULL) {
+        printf("app_deal_close_video error\r\n");
+        return 1;
+    }
+    pic_client_info_delete(addr);
+}
+
+
+static void _get_mac_from_cache(char *mac)
+{
+	memcpy(mac, sys_cfgs.mac, sizeof(sys_cfgs.mac));
+}
 
 
 // TODO this place should encode
-void hali_demo_thread_func_0(struct G_TX_NET *net, void *arg)
+void hali_demo_thread_func_0(void *arg)
 {
+    struct G_TX_NET *net = (struct G_TX_NET *)arg;
+    fd_set rdset;
+    int ret = 0;
+    struct timeval tv = {0, 200000};
     for(;; os_sleep_ms(net->interval)) {
-        if (!net->is_inited) {
-            fd_set rdset;
-            struct timeval tv = {0, 200000};
-            int ret = 0;
+        if (!net->is_inited && g_wifi.is_connected) {
             struct sockaddr_in _addr;
-            if (net == NULL) {
-                printf("net is NULL\r\n");
-                return;
-            }
-
             _addr.sin_family = AF_INET;
             _addr.sin_addr.s_addr = inet_addr(INADDR_ANY); /* Accept connection requests from any available network interface */
             _addr.sin_port = htons(net->port); /* 16-bit data in host byte order is converted to network byte order. */
@@ -327,16 +406,21 @@ void hali_demo_thread_func_0(struct G_TX_NET *net, void *arg)
                 continue;
             }
 
-            
             net->is_inited = 1; /* if code can run to there, mean everything is normal */
+        } else {
+            mcu_watchdog_feed();
+            os_sleep_ms(500);
+            continue;
+        }
 
+        if (g_wifi.is_connected) {
             FD_ZERO(&rdset);
             FD_SET(net->socket, &rdset); // if you add a socket, you should add there
 
             ret = select(net->socket+1, &rdset, NULL, NULL, &tv);  // read  ==0: timeout <0: error >0:  data ready
             if (ret < 0) {
                 printf("select failed\r\n");
-                os_sleep_ms(500);
+                os_sleep_ms(500); // TODO 
                 net->is_inited = 0;
                 continue;
             } else if (ret == 0) {
@@ -412,19 +496,203 @@ void hali_demo_thread_func_0(struct G_TX_NET *net, void *arg)
                     default: 
                         printf("invail cid:%d\r\n", rev_header_demo->cid);
                         rev_header_demo->reFlag = 2; /* mean this cid is not exists */
-		                send_len = rev_len;
+                        send_len = rev_len;
                         break;
                 }
                 sendto(net->socket, net->buffer, send_len, 0, (struct sockaddr *)&client_addr, addr_len);
                 memset(net, 0, sizeof(struct G_TX_NET));
             }
+        } else {
+            os_sleep_ms(500);
         }   
+    }
+}
+
+void hali_demo_thread_func_1(void *arg)
+{
+    struct G_TX_NET *net = (struct G_TX_NET *)arg;
+    fd_set rdset;
+    int ret = 0;
+    struct timeval tv = {0, 200000};
+    for(;; os_sleep_ms(net->interval)) {
+        if (!net->is_inited && g_wifi.is_connected) {            
+            struct sockaddr_in _addr;
+
+            _addr.sin_family = AF_INET;
+            _addr.sin_addr.s_addr = inet_addr(INADDR_ANY); /* Accept connection requests from any available network interface */
+            _addr.sin_port = htons(net->port); /* 16-bit data in host byte order is converted to network byte order. */
+
+            /* auto choose suitable protocol */
+            net->socket = socket(AF_INET, net->type, 0); 
+            if (net->socket < 0) {
+                printf("socket create failed!\r\n");
+                os_sleep_ms(500);
+                net->is_inited = 0;
+                continue;
+            }
+            ret = bind(net->socket, (struct sockaddr *)&_addr, sizeof(struct sockaddr));
+            if (ret == -1) {
+                printf("bind failed!\r\n");
+                if (net->socket) {
+                    close(net->socket);
+                    net->socket = 0;
+                }
+                os_sleep_ms(500);
+                net->is_inited = 0;
+                continue;
+            }
+
+            net->is_inited = 1; /* if code can run to there, mean everything is normal */
+        } else {
+            mcu_watchdog_feed();
+            os_sleep_ms(500);
+            continue;
+        }
+
+        if (g_wifi.is_connected) {
+            FD_ZERO(&rdset);
+            FD_SET(net->socket, &rdset); // if you add a socket, you should add there
+
+            ret = select(net->socket+1, &rdset, NULL, NULL, &tv);  // read  ==0: timeout <0: error >0:  data ready
+            if (ret < 0) {
+                printf("select failed\r\n");
+                os_sleep_ms(500);
+                net->is_inited = 0;
+                continue;
+            } else if (ret == 0) {
+                continue;
+            }
+
+            if (FD_ISSET(net->socket, &rdset)) {
+                // hendle request ready
+                struct sockaddr_in client_addr;
+                int rev_len = 0;
+                socklen_t addr_len = 0;
+
+                struct cProHeader *header; /* receive header */
+                struct cProBody *body; /* receive body */
+                rev_len = recvfrom(net->socket, net->buffer, sizeof(net->buffer), 0, (struct sockaddr *)&client_addr, &addr_len); /* keep client addr for the next snedto */
+
+                struct cProHeader *rev_header_demo = (struct cProHeader *)net->buffer;
+                
+                if (rev_header_demo->head != MAGIC_HEADER) {
+                    printf("bad magic header\r\n");
+                    return -1;
+                }
+                
+                // private protocol
+                int send_len = 0; /* send size after analyze data */
+                switch (rev_header_demo->cid) 
+                {
+                    // TODO the following func need to be accomplish 
+                    case CPRO_OPEN_VIDEO:
+                    case CPRO_OPEN_VIDEO_GRAB:
+                        rev_header_demo->reFlag = app_deal_open_video(net->socket, &client_addr, net->buffer + CPRO_HDR_SIZE, (rev_header_demo->cid == CPRO_OPEN_VIDEO ? 0 : 1));
+                        rev_header_demo->len = 0;
+                        send_len = rev_header_demo->len + CPRO_HDR_SIZE;
+                        break;
+                    case CPRO_CLOSE_VEIDEO:
+                        rev_header_demo->reFlag = app_deal_close_video(&client_addr);
+                        rev_header_demo->len = 0;
+                        send_len = rev_header_demo->len + CPRO_HDR_SIZE;
+                        break;
+                    case CPRO_NAK_HANDLE:
+                        rev_header_demo->reFlag = app_deal_nak_handle(net->buffer + CPRO_HDR_SIZE, rev_len);
+                        send_len = CPRO_HDR_SIZE;
+                        rev_header_demo->len = 0;
+                        break;
+                    default: 
+                        printf("invail cid:%d\r\n", rev_header_demo->cid);
+                        rev_header_demo->reFlag = 2; /* mean this cid is not exists */
+                        send_len = rev_len;
+                        break;
+                }
+                sendto(net->socket, net->buffer, send_len, 0, (struct sockaddr *)&client_addr, addr_len);
+                memset(net, 0, sizeof(struct G_TX_NET));
+            }   
+        } else {
+            os_sleep_ms(500);
+        }
+    }
+}
+
+void hali_demo_thread_func_2(void *arg)
+{
+    struct G_TX_NET *net = (struct G_TX_NET *)arg;
+    int ret = 0;
+    for (;; os_sleep_ms(net->interval)) {
+        if (!net->is_inited && g_wifi.is_connected) {
+            struct sockaddr_in _addr;
+
+            _addr.sin_family = AF_INET;
+            _addr.sin_addr.s_addr = inet_addr(INADDR_ANY); /* Accept connection requests from any available network interface */
+            _addr.sin_port = htons(net->port); /* 16-bit data in host byte order is converted to network byte order. */
+
+            /* auto choose suitable protocol */
+            net->socket = socket(AF_INET, net->type, 0); 
+            if (net->socket < 0) {
+                printf("socket create failed!\r\n");
+                os_sleep_ms(500);
+                net->is_inited = 0;
+                continue;
+            }
+
+            net->is_inited = 1; /* if code can run to there, mean everything is normal */
+        } else {
+            mcu_watchdog_feed();
+            os_sleep_ms(500);
+            continue;
+        }
+
+        if (g_wifi.is_connected) {
+            uint8_t response[128] = {0}, tmac[6] = {0};	
+            struct sockaddr_in addr;	
+            struct cProHeader *prohdr = (struct cProHeader *)response;
+            struct eventSetEar *evtset = (struct eventSetEar *)(response+CPRO_HDR_SIZE);
+            uint8_t status;
+
+            evtset->type = EVT_TYPE_EAR_V2;
+
+            if(g_wifi.is_connected == 0) {
+                return 0;
+            }
+            //sensor status
+            evtset->isSensorOk = !sensor_ols.offline_flag;
+            
+            prohdr->cid = CPRO_EVENT_NOTIFY;
+            prohdr->head = MAGIC_HEADER;
+            prohdr->len = sizeof(struct eventSetEar);
+            prohdr->ackNeed = 0;
+            prohdr->seqNo = lseqNo++;
+            prohdr->reFlag = 0;
+
+            
+            _get_mac_from_cache(tmac);
+            evtset->mac[0] = tmac[4];
+            evtset->mac[1] = tmac[5];
+
+            // addr.sin_family = AF_INET;
+            // addr.sin_port = htons(pctxd->port);	
+            memcpy(&addr.sin_addr, &net->addr, sizeof(net->addr));
+            sendto(net->socket, (void *)response, CPRO_HDR_SIZE + prohdr->len, 0,
+                (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
+        } else {
+            os_sleep_ms(500);
+        }
     }
 }
 
 void hali_thread_func_register(struct G_TX_NET *net)
 {
-    net->thread_func = hali_demo_thread_func_0;
+    if (net == &tx_net_0) {
+        net->thread_func = hali_demo_thread_func_0;
+    } else if (net == &tx_net_1) {
+        net->thread_func = hali_demo_thread_func_1;
+    } else if (net == &tx_net_2) {
+        net->thread_func = hali_demo_thread_func_2;
+    } else {
+        printf("this is big problem \r\n");
+    }
 }
 
 void hali_network_init(struct G_TX_NET *net)
@@ -444,16 +712,47 @@ void hali_network_register(void)
         .is_inited = 0,
         .interval = 200,
         .priority = 9,
-        .stack_size = 512,
+        .stack_size = 4096,
         .type = CON_UDP,
         .port = 10005,
+    };
+
+    memset(&tx_net_1, 0, sizeof(struct G_TX_NET));
+    memcpy(tx_net_1.name, "net_1", strlen("net_1"));
+    tx_net_1 = (struct G_TX_NET) {
+        .is_inited = 0,
+        .interval = 200,
+        .priority = 9,
+        .stack_size = 1024,
+        .type = CON_UDP,
+        .port = 10006,
+    };
+
+    memset(&tx_net_2, 0, sizeof(struct G_TX_NET));
+    memcpy(tx_net_2.name, "net_2", strlen("net_2"));
+    tx_net_2 = (struct G_TX_NET) {
+        .is_inited = 0,
+        .interval = 2000,
+        .priority = 9,
+        .stack_size = 1024,
+        .type = CON_UDP,
+        .port = 10007,
     };
     // add thread ,please add there
     
     hali_network_init(&tx_net_0);
+    hali_network_init(&tx_net_1);
+    hali_network_init(&tx_net_2);
 }
 
 void hali_network_thread_start(void)
 {
-    csi_kernel_task_new((k_task_entry_t)tx_net_0.thread_func, tx_net_0.name, NULL, tx_net_0.priority, 0, NULL, tx_net_0.stack_size, &tx_net_0.thread);
+    mcu_watchdog_feed();
+    printf("network thread start\r\n");
+    csi_kernel_task_new((k_task_entry_t)tx_net_0.thread_func, tx_net_0.name, (void*)&tx_net_0, tx_net_0.priority, 0, NULL, tx_net_0.stack_size, &tx_net_0.thread);
+    printf("halibaduo 1\r\n");
+    csi_kernel_task_new((k_task_entry_t)tx_net_1.thread_func, tx_net_1.name, (void*)&tx_net_1, tx_net_1.priority, 0, NULL, tx_net_1.stack_size, &tx_net_1.thread);
+    printf("halibaduo 2\r\n");
+    csi_kernel_task_new((k_task_entry_t)tx_net_2.thread_func, tx_net_2.name, (void*)&tx_net_2, tx_net_2.priority, 0, NULL, tx_net_2.stack_size, &tx_net_2.thread);
+    printf("halibaduo 3\r\n");
 }

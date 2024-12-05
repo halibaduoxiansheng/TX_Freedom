@@ -55,8 +55,10 @@
 #include "test_demo/test_demo.h"
 #include "atcmd.c"
 #include "keyWork.h"
+#include "../sdk/include/lib/ble/ble_demo.h"
 #include "../app/halibaduo/halibaduo.h"
 #include "../app/halibaduo/hali_wifi.h"
+#include "../app/halibaduo/hali_energy.h"
 
 extern uint8_t get_psram_status();
 
@@ -266,12 +268,13 @@ static int32 atcmd_normal_write(struct atcmd_dataif *dataif, uint8 *buf, int32 l
 }
 
 
-void user_sta_add(char *addr){
+void user_sta_add(char *addr)
+{
 	connect_led++;
 	memcpy(mac_adr,addr,6);	
 	os_printf("user_sta_add:%x %x %x %x %x %x\r\n",addr[0],addr[1],addr[2],addr[3],addr[4],addr[5]);
 
-#if I4S_AUTO_BLE
+#if TX_AUTO_BLE
 	if(ieee80211_conf_get_stacnt(sys_cfgs.wifi_mode) > 0)
 	{
 		struct lmac_ops *lops = NULL;
@@ -282,7 +285,7 @@ void user_sta_add(char *addr){
 		if (lops->btops) {
     		bt_ops = (struct bt_ops *)lops->btops;
 		}
-		i4s_ble_stop(bt_ops);
+		tx_ble_stop(bt_ops);
 	}
 #endif
 }
@@ -291,36 +294,35 @@ void user_sta_del(char *addr){
 	connect_led--;
 	memset(mac_adr,0,6); 
 	os_printf("user_sta_del:%x %x %x %x %x %x\r\n",addr[0],addr[1],addr[2],addr[3],addr[4],addr[5]);
-#if I4S_AUTO_BLE
+#if TX_AUTO_BLE
 	if(ieee80211_conf_get_stacnt(sys_cfgs.wifi_mode) == 0)
 	{
    	 	struct lmac_ops *lops = (struct lmac_ops *)g_ops;
     	struct bt_ops *bt_ops = (struct bt_ops *)lops->btops;
-		i4s_ble_init(bt_ops);
+		tx_ble_init(bt_ops);
 	}
 #endif
 }
 
 
-#if I4S_AUTO_BLE
-void i4s_ble_auto_for_project(void) 
+#if TX_AUTO_BLE
+void tx_ble_auto_for_project(void) 
 {
 	struct lmac_ops *lops = NULL;
 	struct bt_ops *bt_ops = NULL;
 	extern void *g_ops;
-	extern volatile bool gPowerOn;
 	
-	if (gPowerOn) {	
+	if (tx_power.is_powerOn) {	
 		lops = (struct lmac_ops *)g_ops;
 		bt_ops = (struct bt_ops *)lops->btops;
-		i4s_ble_init(bt_ops); // open ble
+		tx_ble_init(bt_ops); // open ble
 	} else {
 		if (g_ops) {
 			lops = (struct lmac_ops *)g_ops;
 		}
 		if (lops->btops) {
 			bt_ops = (struct bt_ops *)lops->btops;
-			i4s_ble_stop(bt_ops);
+			tx_ble_stop(bt_ops);
 		}
 	}
 }

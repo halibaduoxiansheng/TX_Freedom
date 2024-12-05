@@ -50,6 +50,11 @@ uint8_t hali_sys_get_auto_gen_license(struct cProLic *lic);
 
 uint8_t hali_sys_port_get_mac(uint8_t *mac);
 
+int tx_camera_offline_check(void);
+
+uint8_t pic_client_info_exist_check(struct sockaddr_in *addr);
+uint8_t pic_client_info_delete(struct sockaddr_in *addr);
+
 extern struct sensor_ol sensor_ols;
 
 #endif

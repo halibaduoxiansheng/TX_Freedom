@@ -165,6 +165,16 @@ void hali_energy_init(struct G_TX_Power *power)
     hali_remind_to_powerOff_two_func(power, remind_func, power_off_func); // XXX Users should put your demand in these functions if you want to use them
 }
 
+void powerOn_mcu(void)
+{
+    gpio_set_val(tx_power.mcu_io, tx_power.mcu_work_level);
+}
+
+void powerOff_mcu(void)
+{
+    gpio_set_val(tx_power.mcu_io, !tx_power.mcu_work_level);
+}
+
 
 void hali_energy_register(void)
 {
@@ -176,6 +186,7 @@ void hali_energy_register(void)
         .mcu_io = PA_2,
         .adc_io = PA_1,
         .charging_io = PA_8,
+        .mcu_work_level = 1,
         // .basic_unit = 1,
         .detect_interval = 200,
         .power_charging_level = 1,
@@ -217,7 +228,7 @@ void hali_battrgy_program(struct G_TX_Power *power)
             power->need_remind_battery = 0;
         }
 
-        if (power->need_powerOn && power->is_powerOff) {
+        if (power->need_powerOn && (power->is_powerOff || !power->is_powerOn)) {
             power->power_on(power);
             power->need_powerOn = 0;
             return;

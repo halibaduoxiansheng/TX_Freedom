@@ -70,6 +70,7 @@
     "functional": "c",
     "hali_network.h": "c",
     "modes.h": "c",
-    "fw.h": "c"
+    "fw.h": "c",
+    "ble_demo.h": "c"
   }
 }

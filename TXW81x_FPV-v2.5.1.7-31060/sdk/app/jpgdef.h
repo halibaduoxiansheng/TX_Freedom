@@ -73,7 +73,7 @@ typedef struct
 
 
 void *get_jpeg_first_buf(void *d);
-void del_jpeg_first_node(void *d);
+int del_jpeg_first_node(void *d);
 void del_jpeg_frame(void *d);
 struct list_head* get_frame(uint8 jpgid);
 uint32 get_jpeg_len(void *d);

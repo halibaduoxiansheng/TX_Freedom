@@ -11,6 +11,7 @@ struct cProLic{
 	char lic[144];
 }__attribute__((__packed__));
 
+
 void hali_network_register(void);
 
 void hali_network_thread_start(void);

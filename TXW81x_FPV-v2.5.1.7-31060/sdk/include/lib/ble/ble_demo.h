@@ -34,9 +34,9 @@ void  ble_adv_parse_param(uint8 *data, int len);
 int32 ble_set_coexist_en(struct bt_ops *btops, uint8 coexist, uint8 dec_duty);
 int32 ble_demo_mode1_init(struct bt_ops *bt_ops);
 int32 ble_demo_mode2_init(struct bt_ops *bt_ops);
-int32 ble_demo_mode3_init(struct bt_ops *bt_ops);
+int32 tx_ble_init(struct bt_ops *bt_ops);
 int32 ble_demo_start(struct bt_ops *bt_ops, uint8 type);
-int32 ble_demo_stop(struct bt_ops *bt_ops);
+int32 tx_ble_stop(struct bt_ops *bt_ops);
 
 #ifdef __cplusplus
 }

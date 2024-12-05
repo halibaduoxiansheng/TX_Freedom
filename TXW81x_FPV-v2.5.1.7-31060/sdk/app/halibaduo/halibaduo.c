@@ -5,6 +5,7 @@
 #include "halibaduo_lib.h"
 #include "hali_list_node.h"
 #include "hali_network.h"
+#include "hali_picture.h"
 // #include "../../lib/crypto/openssl/include/openssl/modes.h"
 
 
@@ -968,4 +969,77 @@ uint8_t hali_sys_get_auto_gen_license(struct cProLic *lic)
 
 	return 0;
 }
+
+int tx_camera_offline_check(void)
+{
+    return sensor_ols.offline_flag;
+}
+
+
+uint8_t pic_client_info_exist_check(struct sockaddr_in *addr)
+{
+    int i = 0;
+    __disable_irq();
+
+    if (tx_pic->client_num == MAX_CLIENT_NUM) {
+        printf("we can not connect any more client, we have %d client now\n", MAX_CLIENT_NUM);
+        __enable_irq();
+        return 1;
+    }
+
+    for (i = 0; i < MAX_CLIENT_NUM; i++) {
+        if (memcmp(addr, &pic_client[i].addr, sizeof(struct sockaddr_in)) == 0) { // already have this client
+            __enable_irq();
+            return 2;
+        }
+    }
+
+    for (i = 0; i < MAX_CLIENT_NUM; i++) {
+        if (pic_client[i].addr.sin_len == 0) { // find a empty slot
+            memcpy(&pic_client[i].addr, addr, sizeof(struct sockaddr_in));
+            tx_pic->client_index = i;
+            tx_pic->hava_client = 1;
+            tx_pic->client_num++;
+            break;
+        }
+    }
+
+    __enable_irq();
+    return 0;
+}
+
+uint8_t pic_client_info_delete(struct sockaddr_in *addr)
+{
+    int i = 0, j = 0;
+    __disable_irq();
+    if (!tx_pic->hava_client || tx_pic->client_num == 0) {
+
+        printf("there is no any client tp connect, we can not delete anyone\r\n");
+        __enable_irq();
+        return 1;
+    }
+
+    for (i = 0; i < MAX_CLIENT_NUM; i++) {
+        if (memcmp(addr, &pic_client[i].addr, sizeof(struct sockaddr_in)) == 0) { // find the client
+            memset(&pic_client[i].addr, 0, sizeof(struct sockaddr_in));
+            tx_pic->client_num--;
+            if (tx_pic->client_index == i && tx_pic->client_num) {
+                for (j = 0; j < MAX_CLIENT_NUM; j++) {
+                    if (pic_client[i].addr.sin_len != 0) {
+                        tx_pic->client_index = j;
+                        break;
+                    }
+                }
+            }
+            if (tx_pic->client_num == 0) {
+                tx_pic->hava_client = 0;
+            }
+            __enable_irq();
+        }
+    }
+    
+    __enable_irq();
+    return 0;
+}
+
 

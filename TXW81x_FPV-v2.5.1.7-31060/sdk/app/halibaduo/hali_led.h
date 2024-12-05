@@ -53,17 +53,19 @@ void hali_led_register(void);
  * @brief  set led mode , if someone arg you do not use,you can choose input 0
  * @param  led object
  * @param  is_blink: 1:blink,0:not blink （just set this is 1, or we will not check blink_count）
- * @param  blink_count: 
+ * @param  blink_count: If you want it to blink forever, please set it to 66.
  * @param  basic_unit: basic unit of time  -> ms
  * @param  brignt_time: brightness time  -> ms
  * @param  dark_time: dark time  -> ms
- * @param  need_light   >=1: should to light  0: should not
+ * @param  need_light   >=1: should to light(always on)  0: should not
  */
 void hali_set_linght_mode(struct G_TX_LED *param1, uint8_t param2, ...);
 
 void hali_led_ticks(void);
 
 uint8_t hali_appLibLedCallBack(struct cProLed* led); /* the fun of led set from app */
+
+void hali_led_define_youself(void);
 
 extern struct G_TX_LED red_led;
 extern struct G_TX_LED green_led;

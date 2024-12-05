@@ -66,6 +66,7 @@
  */
 
 #if BLE_SUPPORT
+uint8_t ble_name[32] = {0};
 
 /**
  * @brief 	This function is a necessary parameter for configuring connections to the network.
@@ -79,7 +80,7 @@ static int32 ble_network_configured(void)
 	struct lmac_ops *lops = (struct lmac_ops *)g_ops;
 	struct bt_ops *bt_ops = (struct bt_ops *)lops->btops;
 	
-	ble_demo_stop(bt_ops);
+	tx_ble_stop(bt_ops);
 	
 	wpa_passphrase(sys_cfgs.ssid, sys_cfgs.passwd, sys_cfgs.psk);
 	ieee80211_conf_set_ssid(WIFI_MODE_STA, sys_cfgs.ssid);
@@ -157,30 +158,31 @@ static const struct uble_value_entry uble_demo_values[] = {
  * @brief ATT service
  */
 static const struct uble_gatt_data uble_demo_att_table[] = {
+
     /*Primary service 1: Generic Access service*/
     {0x2800/*Primary service*/, 0, 0x1800 /*Generic Access service*/},
     
-    {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_READ, 0x2A00 /*Device Name*/},
-    {0x2A00/*Device Name*/, 0, 0},
+    {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_READ, 0x1802 /*SSID read*/},
+    {0x1802/*SSID read*/, 0, (uint32) &uble_demo_values[1]},
     
-    {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_READ, 0x2A01 /*Appearance*/},
-    {0x2A01/*Appearance*/, 0, 0},
+    {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_READ, 0x1803 /*PASSWD read*/},
+    {0x1803/*PASSWD read*/, 0, (uint32) &uble_demo_values[2]},
+    
+    // {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_READ, 0x2A00 /*Device Name*/},
+    // {0x2A00/*Device Name*/, 0, 0},
+    
+    // {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_READ, 0x2A01 /*Appearance*/},
+    // {0x2A01/*Appearance*/, 0, 0},
 
-    /*Primary service 2: app demo service*/
-    {0x2800/*Primary service*/, 0, 0x1910 /*demo service*/},
+    // /*Primary service 2: app demo service*/
+    // {0x2800/*Primary service*/, 0, 0x1910 /*demo service*/},
     
-    {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_WRITE_WITHOUT_RESPONSE, 0x2b11 /*app write */},
-    {0x2b11/*tuya app write*/, 0, (uint32) &uble_demo_values[0]},
+    // {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_WRITE_WITHOUT_RESPONSE, 0x2b11 /*app write */},
+    // {0x2b11/*tuya app write*/, 0, (uint32) &uble_demo_values[0]},
     
-    {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_NOTIFY, 0x2b10 /*notify to app*/},
-    {0x2b10/*notify to tuya app*/, 0, 0},
-    {0x2902/*Characteristic CCCD*/, 0, 0},
-    
-    {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_READ, 0x2b12 /*SSID read*/},
-    {0x2b12/*SSID read*/, 0, (uint32) &uble_demo_values[1]},
-    
-    {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_READ, 0x2b13 /*PASSWD read*/},
-    {0x2b13/*PASSWD read*/, 0, (uint32) &uble_demo_values[2]},
+    // {0x2803/*Characteristic*/, UBLE_GATT_CHARAC_NOTIFY, 0x2b10 /*notify to app*/},
+    // {0x2b10/*notify to tuya app*/, 0, 0},
+    // {0x2902/*Characteristic CCCD*/, 0, 0},
 };
 
 /**
@@ -275,17 +277,55 @@ int32 ble_demo_mode2_init(struct bt_ops *bt_ops)
  * @param 	bt_ops 	bt_ops
  * @return 	int32 
  */
-int32 ble_demo_mode3_init(struct bt_ops *bt_ops)
+
+static void tx_set_ble_name(char *name)
 {
-	uble_init(bt_ops, uble_demo_att_table, ARRAY_SIZE(uble_demo_att_table));
-	uint8 scan_resp[] = {0x04, 0x09, 0x53, 0x53, 0x53, 0x19, 0xFF, 0xD0, 0x07, 0x01, 0x03, 0x00, 0x00, 0x0C, 0x00, 0x88, 0xD1, 0xC4, 0x89, 0x2B, 0x56, 0x7D, 0xE5, 0x65, 0xAC, 0xA1, 0x3F, 0x09, 0x1C, 0x43, 0x92};
-	uint8 adv_data[] = {0x02, 0x01, 0x06, 0x03, 0x02, 0x01, 0xA2, 0x14, 0x16, 0x01, 0xA2, 0x01, 0x6B, 0x65, 0x79, 0x79, 0x66, 0x67, 0x35, 0x79, 0x33, 0x34, 0x79, 0x71, 0x78, 0x71, 0x67, 0x64};
+    // char tmac[7] = {0};
+    // int length = 0;
+	ble_name[0] = (uint8_t)(strlen(name) + 1);
+	ble_name[1] = 0x09;
 
+    // extern struct sys_config sys_cfgs;
+	// os_memcpy(tmac, sys_cfgs.mac, 6);
+    // sprintf(ble_name + strlen(ble_name), MACSTR_1, MAC2STR(tmac));
+
+    // length = strlen(ble_name) + 2;
+
+	sprintf(ble_name+2,"%s",name);
+	ble_name[strlen(name)+2] = 0x19;
+	ble_name[strlen(name)+3] = 0xFF;
+	ble_name[strlen(name)+4] = 0xD0;
+	ble_name[strlen(name)+5] = 0x07;
+	os_printf("blename:%s\r\n",ble_name);
+	for(int i = 0;i<strlen(ble_name);i++)
+	{
+		os_printf("%02x",ble_name[i]);
+	}
+	os_printf("\r\n");
+}
+int32 tx_ble_init(struct bt_ops *bt_ops) // TODO 
+{
+    // struct ble_basic_msg ble_msg;
+	uble_init(bt_ops, uble_demo_att_table, ARRAY_SIZE(uble_demo_att_table));//0x09,0x53, 0x53, 0x52, 0x52,
+    uint8 adv_data[] = {
+        0x02, 0x01, 0x06,                    // Flags: LE General Discoverable Mode, BR/EDR not supported
+        0x03, 0x02, 0x00, 0x18,              // 16-bit Service UUIDs: Generic Access service (0x1800)
+        0x05, 0x03, 0x02, 0x02, 0x18,        // 16-bit Service UUIDs: SSID read service (0x1802)
+        0x05, 0x03, 0x02, 0x03, 0x18,         // 16-bit Service UUIDs: PASSWD read service (0x1803)
+        strlen(sys_cfgs.ssid) + 1, 0x09, sys_cfgs.ssid, // SSID
+    };
+
+	tx_set_ble_name(sys_cfgs.ssid);
 	ble_ll_set_advdata(bt_ops, adv_data, sizeof(adv_data));
-	ble_ll_set_scan_rsp(bt_ops, scan_resp, sizeof(scan_resp));
-	ble_ll_set_adv_interval(bt_ops, 100);
 
-	return ble_ll_open(bt_ops, 2, 38);
+	ble_ll_set_scan_rsp(bt_ops, ble_name, strlen(ble_name));
+
+	ble_ll_set_adv_interval(bt_ops, 40);
+#if 1
+	ble_ll_set_coexist_en(bt_ops, 1, 0);
+    ble_ll_set_adv_en(bt_ops, 1);
+#endif
+	return ble_ll_open(bt_ops, 2, 38); // open bluetooth start advertising
 }
 
 #else
@@ -321,7 +361,7 @@ int32 ble_demo_start(struct bt_ops *bt_ops, uint8 type)
  * @param 	bt_ops 	bt_ops
  * @return 	int32
  */
-int32 ble_demo_stop(struct bt_ops *bt_ops)
+int32 tx_ble_stop(struct bt_ops *bt_ops)
 {
 	ble_adv_deinit();
 	

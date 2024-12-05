@@ -13,10 +13,50 @@ struct G_TX_WIFI g_wifi;
 
 
 
+/**
+ * @brief set wifi name + mac
+ */
+static void format_bytes(uint8_t *data, size_t len, uint8_t *mac)
+{
+    if (len > 6) {
+        printf("max of mac is 6, we can not add %d chatacters, so we help you to set 6\r\n");
+        len = 6;
+    }
+    for (int i = 0; i < len; i++) {
+        if ((i+1) == len) {
+            sprintf(data + strlen(data), "%02x", mac[i]);
+        } else {
+            sprintf(data + strlen(data), "%02x:", mac[i]);
+        }
+    }
+}
+
+
+void hali_wifiInfo_init(void)
+{
+    memset(&g_wifi, 0, sizeof(struct G_TX_WIFI));
+    g_wifi = (struct G_TX_WIFI) {
+        .have_inited = 0,
+        .is_connected = 0,
+        .ssid = "Otoscope-",
+        .password = "",
+        .mac_num = 4,
+    };
+    format_bytes(g_wifi.ssid, g_wifi.mac_num, sys_cfgs.mac);
+}
 
 
 
+void hali_wifiInfo_register(void *cfg)
+{
+    hali_wifiInfo_init();
 
+    struct sys_config *syscfg = (struct sys_config *)cfg;
+    memcpy(syscfg->ssid, g_wifi.ssid, sizeof(g_wifi.ssid));
+    memcpy(syscfg->passwd, g_wifi.password, sizeof(g_wifi.password));
+
+    g_wifi.have_inited = 1;
+}
 
 
 
