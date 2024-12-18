@@ -22,11 +22,12 @@ static void format_bytes(uint8_t *data, size_t len, uint8_t *mac)
         printf("max of mac is 6, we can not add %d chatacters, so we help you to set 6\r\n");
         len = 6;
     }
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < len; i++) { //must be  i < 5, this place not check,you should know it
         if ((i+1) == len) {
             sprintf(data + strlen(data), "%02x", mac[i]);
         } else {
-            sprintf(data + strlen(data), "%02x:", mac[i]);
+            sprintf(data + strlen(data), "%02x", mac[i]);
+            // sprintf(data + strlen(data), "%02x:", mac[i]);
         }
     }
 }
@@ -40,7 +41,7 @@ void hali_wifiInfo_init(void)
         .is_connected = 0,
         .ssid = "Otoscope-",
         .password = "",
-        .mac_num = 4,
+        .mac_num = 2, /*1个是2个字母数字*/
     };
     format_bytes(g_wifi.ssid, g_wifi.mac_num, sys_cfgs.mac);
 }

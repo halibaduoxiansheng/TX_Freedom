@@ -191,6 +191,7 @@ void powerOn_mcu(void);
 void powerOff_mcu(void);
 
 void hali_energy_register(void);
+void hali_energy_ticks(void);
 extern struct G_TX_Power tx_power;
 
 #endif

@@ -1,5 +1,18 @@
 #include "hali_energy.h"
 
+
+struct TX_ENERGY_Thd {
+    void *thread;
+    uint16_t stack_size;
+    char stack_name[15];
+    uint8_t priority;
+    uint16_t interval;
+    void *args;
+
+    void (*trd_func)(void*);
+};
+struct TX_ENERGY_Thd tx_energy_thd;
+
 struct G_TX_Power tx_power;
 
 
@@ -103,15 +116,14 @@ static void power_off_func(void)
  */
 uint8_t getPowerLevel(struct G_TX_Power *power)
 {
-    //static int tmpV = 0;
-    static tmpV = 0;
-    uint8_t quantity;
+    int tmpV = 0;
+    uint8_t quantity = 0;
 
     if (power == NULL) {
         printf("something error ,such as power is NULL~\r\n");
         return -1;
     }
-    tmpV = power->get_battery_value(power);
+    tmpV = power->now_bat;//power->get_battery_value(power);
 
     // 定义充电状态和非充电状态下的电压阈值和对应的电量值
     const int charging_thresholds[] = {BAT_4_17V, BAT_4_10V, BAT_4_08V, BAT_4_05V, BAT_4_02V, BAT_3_99V, BAT_3_96V, BAT_3_88V, BAT_3_81V, BAT_3_76V, BAT_3_71V, BAT_3_58V};
@@ -145,7 +157,7 @@ uint8_t getPowerLevel(struct G_TX_Power *power)
 
 static void hali_energy_electricity_value_register(struct G_TX_Power *power)
 {
-    power->getPowerLevel = getPowerLevel(power);
+    power->getPowerLevel = getPowerLevel;
 }
 
 void hali_energy_init(struct G_TX_Power *power)
@@ -188,7 +200,7 @@ void hali_energy_register(void)
         .charging_io = PA_8,
         .mcu_work_level = 1,
         // .basic_unit = 1,
-        .detect_interval = 200,
+        .detect_interval = 500,
         .power_charging_level = 1,
         .power_on = hali_powerOn,
         .power_off = hali_powerOff,
@@ -196,14 +208,21 @@ void hali_energy_register(void)
         .poweroff_bat = BAT_3_46V,
     };
 
+    
+
     hali_energy_init(&tx_power);
 }
 
-void hali_battrgy_program(struct G_TX_Power *power)
+void hali_battrgy_program(void *args)
 {
+    if (args == NULL) {
+        printf("some very bad thing happened\r\n");
+    }
+    struct G_TX_Power *power = (struct G_TX_Power *)args;
     for(;;os_sleep_ms(power->detect_interval))
     {
         power->is_charging = power->get_charging_status(power);
+        // printf("power->is_charging is %d\r\n", power->is_charging);
 
         power->now_bat = power->get_battery_value(power);
 
@@ -238,4 +257,21 @@ void hali_battrgy_program(struct G_TX_Power *power)
         power->tx_battery = power->getPowerLevel(power);
         // TODO set Device battery
     }
+}
+
+void hali_energy_ticks(void)
+{
+    void *thread;
+    // thread init
+    memset(&tx_energy_thd, 0, sizeof(struct TX_ENERGY_Thd));
+    tx_energy_thd = (struct TX_ENERGY_Thd) {
+        .stack_name = "tx_energy_thd",
+        .trd_func = hali_battrgy_program,
+        .args = &tx_power,
+        .stack_size = 512,
+        .priority = 10,
+        .interval = 200, // repeat interval
+    };
+    printf("energy task ready to run\r\n");
+    csi_kernel_task_new((k_task_entry_t)tx_energy_thd.trd_func, tx_energy_thd.stack_name, tx_energy_thd.args, tx_energy_thd.priority, 0, NULL, tx_energy_thd.stack_size, &thread);
 }

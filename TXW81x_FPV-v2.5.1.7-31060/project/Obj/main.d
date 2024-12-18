@@ -130,6 +130,8 @@ Obj/main.o: main.c sys_config.h project_config.h \
  ../sdk/app/../app/halibaduo/hali_network.h \
  ../sdk/app/../app/halibaduo/halibaduo.h \
  ../sdk/app/../app/halibaduo/hali_list_node.h \
+ ../sdk/app/../app/halibaduo/hali_led.h \
+ ../sdk/app/../app/halibaduo/hali_button.h \
  ../sdk/app/../app/halibaduo/hali_wifi.h \
  ../sdk/app/../app/halibaduo/hali_energy.h
 
@@ -496,6 +498,10 @@ syscfg.h:
 ../sdk/app/../app/halibaduo/halibaduo.h:
 
 ../sdk/app/../app/halibaduo/hali_list_node.h:
+
+../sdk/app/../app/halibaduo/hali_led.h:
+
+../sdk/app/../app/halibaduo/hali_button.h:
 
 ../sdk/app/../app/halibaduo/hali_wifi.h:
 

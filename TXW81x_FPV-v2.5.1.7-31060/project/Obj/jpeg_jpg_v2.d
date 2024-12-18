@@ -77,7 +77,9 @@ Obj/jpeg_jpg_v2.o: ../sdk/lib/video/dvp/jpeg/jpg_v2.c sys_config.h \
  ../sdk/app/spook/spook_config.h ../sdk/app/socketModule/socket_module.h \
  ../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/hali_network.h \
  ../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/halibaduo.h \
- ../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/hali_list_node.h
+ ../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/hali_list_node.h \
+ ../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/hali_led.h \
+ ../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/hali_button.h
 
 sys_config.h:
 
@@ -312,3 +314,7 @@ syscfg.h:
 ../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/halibaduo.h:
 
 ../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/hali_list_node.h:
+
+../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/hali_led.h:
+
+../sdk/lib/video/dvp/jpeg/../../../../app/halibaduo/hali_button.h:

@@ -3,7 +3,7 @@
  * 
  * 项目还可以想一想优化一下  -> 比如 1.容易移植 2.容易扩展 3.容易维护
  */
-#include "halibaduo_lib.h"
+#include "../../halibaduo_lib.h"
 
 #if (HALI_PROJECT_1 == 1)
 #include "project_1.h"
@@ -35,6 +35,7 @@ void hali_print_ver(void)
 static void hali_gpio_init(void)
 {
     gpio_iomap_input(tx_power.charging_io, GPIO_DIR_INPUT);	// USB_DET
+	extern struct G_TX_Button tx_button_0;
     gpio_iomap_input(tx_button_0.button_io, GPIO_IOMAP_INPUT); //power_key
     //gpio_set_mode(GPIO_POWER_KEY, GPIO_PULL_UP, GPIO_PULL_LEVEL_100K); // 
 
@@ -76,8 +77,7 @@ static void hali_init(void)
 
 void hali_powerOn(void) 
 {
-    tx_power.is_powerOn = 1;
-    tx_power.is_powerOff = 0; 
+    printf("power On\r\n");
     powerOn_mcu();
 
     tx_sys_init(); // system init
@@ -88,11 +88,13 @@ void hali_powerOn(void)
 	extern void tx_ble_auto_for_project(void);
 	tx_ble_auto_for_project();
 #endif
+    tx_power.is_powerOn = 1;
+    tx_power.is_powerOff = 0; 
 }
 
 void hali_powerOff(void)
 {
-    //
+    printf("power Off\r\n");
     tx_power.is_powerOn = 0;
     tx_power.is_powerOff = 1;
     powerOff_mcu();
@@ -117,6 +119,11 @@ void hali_short_press_func(void)
     printf("short press func do\r\n");
 }
 
+
+static void hali_energy_program(void)
+{
+    hali_energy_ticks();
+}
 
 static void hali_powerButton_program(void)
 {
@@ -143,6 +150,10 @@ static void hali_pic_program(void)
 
 
 /* =====  the following is the thread function  ===== */
+static void _energy_task(void)
+{
+    hali_energy_program();
+}
 static void _led_task(void)
 {   
     hali_led_program();
@@ -165,16 +176,23 @@ static void _pic_task(void)
 
 static void hali_thread_task(void)
 {
+    _energy_task();
     _button_task();
-    _led_task();
+    _led_task(); // TODO 
     _net_task();
     _pic_task();
 }
 
+void bug_demo(void)
+{
+    extern uint8_t button_structure_size;
+    button_structure_size = sizeof(struct G_TX_Button);
+}
 
 void hali_access_main(void)
 {
     hali_print_ver();
+    bug_demo();
     hali_init();
     hali_thread_task();
 }

@@ -65,7 +65,8 @@ Obj/halibaduo_hali_energy.o: ../sdk/app/halibaduo/hali_energy.c \
  ../sdk/app/spook/spook_config.h ../sdk/app/socketModule/socket_module.h \
  ../sdk/include/dev/csi/hgdvp.h ../sdk/include/hal/dvp.h \
  ../sdk/app/halibaduo/hali_network.h \
- ../sdk/app/halibaduo/hali_list_node.h
+ ../sdk/app/halibaduo/hali_list_node.h ../sdk/app/halibaduo/hali_led.h \
+ ../sdk/app/halibaduo/hali_button.h
 
 ../sdk/app/halibaduo/hali_energy.h:
 
@@ -266,3 +267,7 @@ syscfg.h:
 ../sdk/app/halibaduo/hali_network.h:
 
 ../sdk/app/halibaduo/hali_list_node.h:
+
+../sdk/app/halibaduo/hali_led.h:
+
+../sdk/app/halibaduo/hali_button.h:

@@ -86,7 +86,7 @@ struct G_TX_NET { // use IPV4
     void *thread; /* one object , one thread */
     uint16_t stack_size; /* Bytes +4 */
 
-    char name[10];
+    uint8_t name[10];
     
     void (*thread_func)(void *);
 }__attribute__((packed));
@@ -375,6 +375,12 @@ static void _get_mac_from_cache(char *mac)
 // TODO this place should encode
 void hali_demo_thread_func_0(void *arg)
 {
+    if (arg == NULL) {
+        while(1) {
+            os_sleep_ms(3000);
+            printf("no args working\r\n");
+        }
+    }
     struct G_TX_NET *net = (struct G_TX_NET *)arg;
     fd_set rdset;
     int ret = 0;
@@ -510,6 +516,12 @@ void hali_demo_thread_func_0(void *arg)
 
 void hali_demo_thread_func_1(void *arg)
 {
+    if (arg == NULL) {
+        while(1) {
+            os_sleep_ms(3000);
+            printf("no args working\r\n");
+        }
+    }
     struct G_TX_NET *net = (struct G_TX_NET *)arg;
     fd_set rdset;
     int ret = 0;
@@ -618,6 +630,12 @@ void hali_demo_thread_func_1(void *arg)
 
 void hali_demo_thread_func_2(void *arg)
 {
+    if (arg == NULL) {
+        while(1) {
+            os_sleep_ms(3000);
+            printf("no args working\r\n");
+        }
+    }
     struct G_TX_NET *net = (struct G_TX_NET *)arg;
     int ret = 0;
     for (;; os_sleep_ms(net->interval)) {
@@ -712,7 +730,7 @@ void hali_network_register(void)
         .is_inited = 0,
         .interval = 200,
         .priority = 9,
-        .stack_size = 4096,
+        .stack_size = 1024,
         .type = CON_UDP,
         .port = 10005,
     };
@@ -747,12 +765,12 @@ void hali_network_register(void)
 
 void hali_network_thread_start(void)
 {
-    mcu_watchdog_feed();
-    printf("network thread start\r\n");
-    csi_kernel_task_new((k_task_entry_t)tx_net_0.thread_func, tx_net_0.name, (void*)&tx_net_0, tx_net_0.priority, 0, NULL, tx_net_0.stack_size, &tx_net_0.thread);
-    printf("halibaduo 1\r\n");
-    csi_kernel_task_new((k_task_entry_t)tx_net_1.thread_func, tx_net_1.name, (void*)&tx_net_1, tx_net_1.priority, 0, NULL, tx_net_1.stack_size, &tx_net_1.thread);
-    printf("halibaduo 2\r\n");
-    csi_kernel_task_new((k_task_entry_t)tx_net_2.thread_func, tx_net_2.name, (void*)&tx_net_2, tx_net_2.priority, 0, NULL, tx_net_2.stack_size, &tx_net_2.thread);
-    printf("halibaduo 3\r\n");
+    void *thread_0, *thread_1, *thread_2;
+    printf("net task ready to run\r\n");
+
+    // TODO 为什么？ 不能使用 tx_net_0.thread
+    // csi_kernel_task_new((k_task_entry_t)tx_net_0.thread_func, tx_net_0.name, NULL, tx_net_0.priority, 0, NULL, tx_net_0.stack_size, &tx_net_0.thread);
+    csi_kernel_task_new((k_task_entry_t)tx_net_0.thread_func, tx_net_0.name, (void*)&tx_net_0, tx_net_0.priority, 0, NULL, tx_net_0.stack_size, &thread_0); // this is ok? why?
+    csi_kernel_task_new((k_task_entry_t)tx_net_1.thread_func, tx_net_1.name, (void*)&tx_net_1, tx_net_1.priority, 0, NULL, tx_net_1.stack_size, &thread_1);
+    csi_kernel_task_new((k_task_entry_t)tx_net_2.thread_func, tx_net_2.name, (void*)&tx_net_2, tx_net_2.priority, 0, NULL, tx_net_2.stack_size, &thread_2);
 }

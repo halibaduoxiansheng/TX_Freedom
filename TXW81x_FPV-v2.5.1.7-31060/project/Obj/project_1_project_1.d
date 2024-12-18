@@ -1,12 +1,12 @@
 Obj/project_1_project_1.o: \
  ../sdk/app/halibaduo/hali_mcu_prj/project_1/project_1.c \
- ../sdk/app/halibaduo/halibaduo_lib.h ../sdk/include/devid.h \
- ../sdk/include/typesdef.h sys_config.h project_config.h \
- ../sdk/include/errno.h ../sdk/include/osal/csky/typesdef.h \
- ../sdk/include/osal/csky/defs.h ../sdk/include/osal/csky/byteshift.h \
- ../sdk/include/chip/tx_platform.h ../sdk/include/chip/txw81x/txw81x.h \
- ../csky/csi_core/include/csi_core.h ../csky/csi_core/include/core_803.h \
- ../csky/csi_core/include/csi_gcc.h \
+ ../sdk/app/halibaduo/hali_mcu_prj/project_1/../../halibaduo_lib.h \
+ ../sdk/include/devid.h ../sdk/include/typesdef.h sys_config.h \
+ project_config.h ../sdk/include/errno.h \
+ ../sdk/include/osal/csky/typesdef.h ../sdk/include/osal/csky/defs.h \
+ ../sdk/include/osal/csky/byteshift.h ../sdk/include/chip/tx_platform.h \
+ ../sdk/include/chip/txw81x/txw81x.h ../csky/csi_core/include/csi_core.h \
+ ../csky/csi_core/include/core_803.h ../csky/csi_core/include/csi_gcc.h \
  ../sdk/include/chip/txw81x/pin_names.h \
  ../sdk/include/chip/txw81x/io_function.h \
  ../sdk/include/chip/txw81x/adc_voltage_type.h \
@@ -67,11 +67,12 @@ Obj/project_1_project_1.o: \
  ../sdk/app/halibaduo/hali_mcu_prj/project_1/project_1.h \
  ../sdk/app/halibaduo/halibaduo.h ../sdk/app/halibaduo/halibaduo_lib.h \
  ../sdk/app/halibaduo/hali_network.h ../sdk/app/halibaduo/halibaduo.h \
- ../sdk/app/halibaduo/hali_list_node.h ../sdk/app/halibaduo/hali_button.h \
+ ../sdk/app/halibaduo/hali_list_node.h ../sdk/app/halibaduo/hali_led.h \
+ ../sdk/app/halibaduo/hali_button.h ../sdk/app/halibaduo/hali_button.h \
  ../sdk/app/halibaduo/hali_list_node.h ../sdk/app/halibaduo/hali_energy.h \
  ../sdk/app/halibaduo/hali_led.h ../sdk/app/halibaduo/hali_wifi.h
 
-../sdk/app/halibaduo/halibaduo_lib.h:
+../sdk/app/halibaduo/hali_mcu_prj/project_1/../../halibaduo_lib.h:
 
 ../sdk/include/devid.h:
 
@@ -274,6 +275,10 @@ syscfg.h:
 ../sdk/app/halibaduo/halibaduo.h:
 
 ../sdk/app/halibaduo/hali_list_node.h:
+
+../sdk/app/halibaduo/hali_led.h:
+
+../sdk/app/halibaduo/hali_button.h:
 
 ../sdk/app/halibaduo/hali_button.h:
 

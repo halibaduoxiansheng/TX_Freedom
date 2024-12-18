@@ -1,12 +1,12 @@
-#include "hali_list_node.h"
-#include "halibaduo_lib.h"
-#include "halibaduo.h"
+#include "hali_led.h"
+#include "hali_button.h"
 
 
 
 
 struct Double_link_list *tx_dlink_head = NULL;
 struct Double_link_list *tx_dlink_tail = NULL;
+uint8_t button_structure_size = 0;
 
 void double_link_init(void)
 {
@@ -21,11 +21,12 @@ void double_link_init(void)
 		tx_dlink_tail->prev = NULL;
 		tx_double_link.is_init = 1;
 	} else {
-		printf("we already init double link list\r\n");
+		// printf("we already init double link list\r\n");
 	}
 }
 
-void double_link_deinit(void)
+
+void double_link_deinit(void) /* Regardless of type， all deinit */
 {
 	if (tx_double_link.is_init == 0) {
 		printf("double link list not init\r\n");
@@ -67,12 +68,6 @@ struct Double_link_list* double_button_link_insert(struct Double_link_list *head
 		tail->prev = node;
 		node->prev = head;
 		node->next = tail;
-		if (type == LED_TYPE) {
-			node->led = data;
-		}
-		if (type == BUTTON_TYPE) {
-			node->button = data;
-		}
 	} else {
 		node = (struct Double_link_list*)malloc(sizeof(struct Double_link_list)); // the new add node
 		while(temp->next != tail) { // find the last one
@@ -82,12 +77,19 @@ struct Double_link_list* double_button_link_insert(struct Double_link_list *head
 		tail->prev = node;
 		node->next = tail;
 		node->prev = temp;
-		if (type == LED_TYPE) {
-			node->led = data;
-		}
-		if (type == BUTTON_TYPE) {
-			node->button = data;
-		}
+	}
+
+	node->type = type;
+	/**
+	 * XXX just apply pointer self room, we need apply room for this stature
+	 */
+	if (type == LED_TYPE) {
+		node->led = (struct G_TX_LED *)malloc(sizeof(struct G_TX_LED)); // never failed,if failed, just die
+		node->led = (struct G_TX_LED *)data;
+	}
+	else if (type == BUTTON_TYPE) {
+		node->button = (struct G_TX_BUTTON *)malloc(button_structure_size); // 无奈之举！！！ss
+		node->button = (struct G_TX_BUTTON *)data;
 	}
 	return node;
 }

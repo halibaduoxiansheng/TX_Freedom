@@ -1,7 +1,13 @@
 #include "hali_picture.h"
 #include "hali_wifi.h"
+#include "hali_energy.h"
 
 
+
+#define VIDEO_SEND_MAX_LEN 		(850)
+#define VIDEO_HEADER_SIZE		(16) //(sizeof(struct hVideoUDP)) if you change header size,please change its size
+#define SEND_MAX_TRY			(30)
+#define SEND_DATA_BUFFER_SIZE	(VIDEO_SEND_MAX_LEN + VIDEO_HEADER_SIZE + 1)
 
 enum{
 	VIDEO_TYPE_V1 = 1,
@@ -136,14 +142,115 @@ void hali_video_open(void)
 	start_jpeg();
 }
 
-static void hali_picture_thread(void *args)
-{
-    // if (args) {
-    //     struct G_TX_PIC *pic = (struct G_TX_PIC*)args;
-    // }
+TV_HDR_PARAM_ST jpg_header;
 
+TV_HDR_PARAM_ST jpg_header;
+/** 设置 video_init 给到 4096 */
+static void send_udp_data_limit_bytes(int sockfd, uint8_t* data, uint32_t data_len, struct sockaddr_in addr, uint32_t jpg_len, uint32_t max_bytes, int fail_trys, uint8_t is_end)
+{
+	static total_size = 0;
+	// printf("this image of jpg_len is %d\r\n", jpg_len);
+	uint8_t *send_data_pos = NULL;
+	uint8_t send_data[SEND_DATA_BUFFER_SIZE] = {0};
+	static uint8_t calc_flag = 0;
+	int send_bytes = -1;
+	uint32_t send_size = 0;
+	uint32_t offset = 0; // already send bytes
+	uint32_t last_send_size = 0;
+
+	if (data == NULL) {
+		printf("please check args, data is NULL\r\n");
+		return;
+	}
+	if (data_len > VIDEO_SEND_MAX_LEN) {
+		last_send_size = data_len % VIDEO_SEND_MAX_LEN;
+	} else {
+		last_send_size = data_len;
+	}
+
+	
+	while(last_send_size == 0 || offset != data_len) {
+		memset(send_data, 0, SEND_DATA_BUFFER_SIZE);
+		send_data_pos = send_data;
+		if (offset != data_len) { // if already sended bytes not equal to all stay bytes
+			if ((data_len - offset) >= VIDEO_SEND_MAX_LEN) { // remain bytes >= VIDEO_SEND_MAX_LEN
+				memcpy(send_data_pos + VIDEO_HEADER_SIZE, data + offset, VIDEO_SEND_MAX_LEN);
+				send_size = VIDEO_SEND_MAX_LEN + VIDEO_HEADER_SIZE;
+				offset += VIDEO_SEND_MAX_LEN;
+			} else { // remain bytes < VIDEO_SEND_MAX_LEN
+				send_size = last_send_size + VIDEO_HEADER_SIZE;
+				memcpy(send_data_pos + VIDEO_HEADER_SIZE, data + offset, last_send_size);
+				offset += last_send_size;
+			}
+		}
+
+		// jpg_header = (struct tvideo_hdr_param*)send_data_pos;
+		
+
+		if (calc_flag == 0) { // calc the picture frame count
+			// printf("jpg_len is %u, data_len = %d",jpg_len, data_len);
+			uint32_t count0 = jpg_len / data_len;
+			// printf("count0 is %u\r\n", count0);
+			
+			jpg_header.frame_cnt = (count0 * ((data_len / max_bytes) + ((data_len % max_bytes) ? 1 : 0)));
+			// printf("jpg_header.frame_cnt is %u\r\n", jpg_header.frame_cnt);
+			uint32_t count1 = jpg_len % data_len;
+			// printf("count1 is %u\r\n", count1);
+			jpg_header.frame_cnt += ((count1 / max_bytes) + ((count1 % max_bytes) ? 1 : 0));
+			// printf("jpg_header->frame_cnt is %u\r\n", jpg_header.frame_cnt);
+			calc_flag = 1;
+		}
+
+		
+		if (is_end == 1 && offset == data_len) {
+			jpg_header.is_eof = 1;
+			// printf("jpg_header->is_eof is %d\r\n", jpg_header.is_eof);
+			last_send_size = 1; // 跳出循环 （ != 0 就可以）
+			jpg_header.frame_id = --frame_mem_id;
+			printf("send a picture\r\n");
+			calc_flag = 0;
+		} else {
+			jpg_header.is_eof = 0;
+		}
+
+		jpg_header.ptk_ptr = send_data_pos;
+		jpg_header.ptklen = send_size;
+		video_add_pkt_header(&jpg_header);
+
+		do { // send data
+			printf("jpg_header.frame_id is %d, jpg_header.is_eof is %d, jpg_header.frame_cnt is %d\r\n", jpg_header.frame_id, jpg_header.is_eof, jpg_header.frame_cnt);
+			send_bytes = sendto(sockfd, send_data_pos, send_size, MSG_DONTWAIT, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
+			if (send_bytes <= 0) {
+				/* err */
+				printf("udp send err:%d\r\n", send_bytes); // 暂未发现连续失败两次的情况，其余均为丢包，发送是发送成功
+				os_sleep_ms(3);
+			} else {
+				// printf("send success\r\n");
+				// os_sleep_ms(1);
+			} 
+		} while(send_bytes <= 0 && fail_trys--);
+		// if (offset == data_len) {
+		// 	total_size += data_len;
+		// 	printf("total_size is %d\r\n", total_size);
+		// }
+		// printf("last_send_size is %d, offset is %d, data_len is %d, send_bytes is %d\r\n", last_send_size, offset, data_len, send_bytes);
+		if (jpg_header.is_eof == 1) {
+			total_size  = 0;
+		}
+		if (is_end == 1 && offset == data_len) {
+			frame_mem_id++;
+		}
+	}
+}
+
+static void hali_picture_thread(void *arg)
+{
+	// printf("%s:%d\r\n", __FUNCTION__, __LINE__);
+	static uint8_t have_start_jpeg = 0;
+	uint8_t is_end = 0;
+	uint32_t send_len = 0;
 	struct data_structure *get_f = NULL;
-	TV_HDR_PARAM_ST jpg_header; 
+	
 	int timeouts = 0;
 	int head_size = sizeof(struct hVideoUDP);
 	uint8_t *jpeg_buf_addr = NULL;
@@ -156,8 +263,12 @@ static void hali_picture_thread(void *args)
 	int send_byte = 0;
 
 	//启动jpeg(内部就是创建一个发送流,会绑定R AT_SAVE_PHOTO)
-	start_jpeg();
+	
 	while(1) {
+		if (tx_power.is_powerOn && have_start_jpeg == 0) {
+			start_jpeg();
+			have_start_jpeg = 1;
+		}
 		if (WIFI_RUN_STATUS == WIFI_IS_RUNNING) { // TODO open video connected
 			os_mutex_lock(&tx_pic->mutex, OS_MUTEX_WAIT_FOREVER);
 			if(!tx_pic->hava_client) { 
@@ -183,14 +294,6 @@ static void hali_picture_thread(void *args)
 				//获取图片数据一个节点的长度
 				uint_len = (uint32_t)stream_data_custom_cmd_func(get_f,CUSTOM_GET_NODE_LEN,NULL);
 				jpg_len = total_len;
-				//I4SC_PRT("total_len = %d,uint_len = %d\r\n",total_len,uint_len);
-				//i4s
-				os_memset(&jpg_header, 0, sizeof(jpg_header));
-				jpg_header.frame_id = frame_mem_id++;
-				jpg_header.frame_cnt = jpg_len/uint_len;
-				if(jpg_len % uint_len){
-					jpg_header.frame_cnt++;
-				}
 				
 				//遍历图片的节点
 				//LL_FOREACH_SAFE(dest_list,el,tmp)
@@ -204,44 +307,22 @@ static void hali_picture_thread(void *args)
 					{
 						//获取节点的buf起始地址
 						jpeg_buf_addr = (uint8_t *)stream_data_custom_cmd_func(get_f,CUSTOM_GET_NODE_BUF,el->data);
-						jpg_header.ptk_ptr = jpeg_buf_addr - head_size;
 						if(total_len >= uint_len)
 						{
 							total_len -= uint_len;
-							jpg_header.ptklen = uint_len;
-							jpg_header.is_eof = 0;
+							send_len = uint_len;
+							is_end = 0;
 							
 						}
 						else
 						{
-							jpg_header.ptklen = total_len;
-							jpg_header.is_eof = 1;
+							send_len = total_len;
+							is_end = 1;
 							total_len = 0 ;
 						}
 						// private protocol
-						if(1){
-							video_add_pkt_header(&jpg_header);
-							jpg_header.ptklen += head_size;
-							
-							send_byte = -1;
-							timeouts = 0;
-			
-							while(send_byte < 0){
-								send_byte = sendto(g_wifi.connect_sock, jpg_header.ptk_ptr, jpg_header.ptklen, MSG_DONTWAIT,
-										(struct sockaddr *)&(pic_client[tx_pic->client_index].addr), sizeof(struct sockaddr_in)); 
-								timeouts++;
-								if(timeouts > 14){				
-									printf("udp send err:%d\r\n", timeouts);			
-									break;
-								}
-						
-								if (send_byte <= 0) {
-									/* err */
-									//I4SC_PRT("udp send try:%d,total_len = %d,uint_len = %d\r\n", timeouts,total_len,uint_len);			
-									os_sleep_ms(3);
-								}
-							}
-						}
+						send_udp_data_limit_bytes(g_wifi.connect_sock, jpeg_buf_addr, send_len, pic_client[tx_pic->client_index].addr,
+									jpg_len, VIDEO_SEND_MAX_LEN, SEND_MAX_TRY, is_end);
 					}
 					//使用完一个节点,就要删除改节点,快速释放空间
 					stream_data_custom_cmd_func(get_f,CUSTOM_DEL_NODE,el);
@@ -254,6 +335,7 @@ static void hali_picture_thread(void *args)
 			}
 		} else {
 			os_sleep_ms(500);
+			// printf("%s:%d\r\n", __FUNCTION__, __LINE__);
 		}
 	}
 	printf("videoCtx Task Quit\r\n");
@@ -276,12 +358,11 @@ void hali_picture_register(void)
 }
 
 
-// TODO
 void hali_pic_thread_start(void) 
 {
-	mcu_watchdog_feed();
-	printf("picture task start\r\n");
+	void *thread;
+	printf("picture task ready to run\r\n");
     os_mutex_init(&(tx_pic->mutex));
-    csi_kernel_task_new((k_task_entry_t)pic_thd.trd_func, pic_thd.stack_name, pic_thd.args, pic_thd.priority, 0, NULL, pic_thd.stack_size, &pic_thd.thread);
+    csi_kernel_task_new((k_task_entry_t)pic_thd.trd_func, pic_thd.stack_name, pic_thd.args, pic_thd.priority, 0, NULL, pic_thd.stack_size, &thread);
 }
 

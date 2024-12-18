@@ -1047,6 +1047,7 @@ int main(void)
     skbpool_init(SKB_POOL_ADDR, SKB_POOL_SIZE, 80, 0);
     sys_cfg_load();
 
+    // tx_orl.tx_flag = 1; // for machine test
     if (tx_orl.tx_flag) {
         tx_sys_init();
     } else {

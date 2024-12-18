@@ -63,8 +63,8 @@ Obj/halibaduo_hali_button.o: ../sdk/app/halibaduo/hali_button.c \
  ../sdk/app/algorithm/stream_frame/stream_define.h ../sdk/app/spook/rtp.h \
  ../sdk/app/spook/spook_config.h ../sdk/app/socketModule/socket_module.h \
  ../sdk/include/dev/csi/hgdvp.h ../sdk/include/hal/dvp.h \
- ../sdk/app/halibaduo/halibaduo.h ../sdk/app/halibaduo/hali_network.h \
- ../sdk/app/halibaduo/hali_list_node.h
+ ../sdk/app/halibaduo/hali_list_node.h ../sdk/app/halibaduo/halibaduo.h \
+ ../sdk/app/halibaduo/hali_network.h ../sdk/app/halibaduo/hali_led.h
 
 ../sdk/app/halibaduo/hali_button.h:
 
@@ -260,8 +260,10 @@ syscfg.h:
 
 ../sdk/include/hal/dvp.h:
 
+../sdk/app/halibaduo/hali_list_node.h:
+
 ../sdk/app/halibaduo/halibaduo.h:
 
 ../sdk/app/halibaduo/hali_network.h:
 
-../sdk/app/halibaduo/hali_list_node.h:
+../sdk/app/halibaduo/hali_led.h:

@@ -2,6 +2,8 @@
 #define __HALI_LIST_NODE_H__
 #include "halibaduo_lib.h"
 #include "halibaduo.h"
+#include "hali_led.h"
+#include "hali_button.h"
 
 
 enum INSERT_TYPE {
@@ -16,8 +18,10 @@ struct G_TX_Double_link{
 struct G_TX_Double_link tx_double_link;
 
 typedef struct Double_link_list{
-	struct G_TX_Button *button;
     struct G_TX_LED *led;
+	struct G_TX_Button *button;
+
+	uint8_t type; /*  */
     /* if you want add then add member in there */
 
 	struct Double_link_list *prev;
@@ -29,6 +33,7 @@ extern struct Double_link_list *tx_dlink_tail;
 
 
 void double_link_init(void);
+void double_link_deinit(void);
 struct Double_link_list* double_button_link_insert(struct Double_link_list *head, struct Double_link_list * tail, enum INSERT_TYPE type, void *data);
 
 

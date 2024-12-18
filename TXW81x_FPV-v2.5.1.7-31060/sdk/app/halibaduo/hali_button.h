@@ -1,18 +1,19 @@
 #ifndef _HALI_BUTTON_H_
 #define _HALI_BUTTON_H_
 #include "halibaduo_lib.h"
-#include "halibaduo.h"
 #include "hali_list_node.h"
+#include "halibaduo.h"
+
 
 
 /* Button unified structure */
-struct G_TX_Button{
+struct G_TX_Button {
     uint8_t check_level:1; /* Do you need to read the status of the current button? */
     uint8_t button_id:1;
     uint8_t is_press:1;
     uint8_t button_level:1;
     uint8_t active_level:1;
-    uint8_t flag:1;
+    uint8_t flag:1; /* have active short press or long press or something */
     uint8_t reserve:2;
 
     
@@ -25,7 +26,7 @@ struct G_TX_Button{
     
 
     uint8_t state;
-    uint8_t press_ticks;
+    uint16_t press_ticks;
     uint8_t release_ticks;
 
     uint8_t short_press_count:3;
@@ -46,7 +47,6 @@ void hali_button_register(void);
  */
 void hali_button_ticks(void);
 
-extern struct G_TX_Button tx_button_0;
 
 
 #endif

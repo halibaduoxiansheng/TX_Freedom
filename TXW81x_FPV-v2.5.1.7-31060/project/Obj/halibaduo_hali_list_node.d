@@ -1,5 +1,5 @@
 Obj/halibaduo_hali_list_node.o: ../sdk/app/halibaduo/hali_list_node.c \
- ../sdk/app/halibaduo/hali_list_node.h \
+ ../sdk/app/halibaduo/hali_led.h ../sdk/app/halibaduo/halibaduo.h \
  ../sdk/app/halibaduo/halibaduo_lib.h ../sdk/include/devid.h \
  ../sdk/include/typesdef.h sys_config.h project_config.h \
  ../sdk/include/errno.h ../sdk/include/osal/csky/typesdef.h \
@@ -64,9 +64,12 @@ Obj/halibaduo_hali_list_node.o: ../sdk/app/halibaduo/hali_list_node.c \
  ../sdk/app/algorithm/stream_frame/stream_define.h ../sdk/app/spook/rtp.h \
  ../sdk/app/spook/spook_config.h ../sdk/app/socketModule/socket_module.h \
  ../sdk/include/dev/csi/hgdvp.h ../sdk/include/hal/dvp.h \
- ../sdk/app/halibaduo/halibaduo.h ../sdk/app/halibaduo/hali_network.h
+ ../sdk/app/halibaduo/hali_network.h \
+ ../sdk/app/halibaduo/hali_list_node.h ../sdk/app/halibaduo/hali_button.h
 
-../sdk/app/halibaduo/hali_list_node.h:
+../sdk/app/halibaduo/hali_led.h:
+
+../sdk/app/halibaduo/halibaduo.h:
 
 ../sdk/app/halibaduo/halibaduo_lib.h:
 
@@ -260,6 +263,8 @@ syscfg.h:
 
 ../sdk/include/hal/dvp.h:
 
-../sdk/app/halibaduo/halibaduo.h:
-
 ../sdk/app/halibaduo/hali_network.h:
+
+../sdk/app/halibaduo/hali_list_node.h:
+
+../sdk/app/halibaduo/hali_button.h:
