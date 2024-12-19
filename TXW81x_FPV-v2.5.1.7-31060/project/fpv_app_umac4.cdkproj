@@ -2092,6 +2092,21 @@ Board: txw81x
             <File Name="../sdk/lib/bus/iic/sensor/sensor_bf30a2.c">
               <FileOption/>
             </File>
+            <File Name="../sdk/lib/bus/iic/sensor/sensor_sp0a83.c">
+              <FileOption/>
+            </File>
+            <File Name="../sdk/lib/bus/iic/sensor/sensor_bf20a6.c">
+              <FileOption/>
+            </File>
+            <File Name="../sdk/lib/bus/iic/sensor/sensor_sc030.c">
+              <FileOption/>
+            </File>
+            <File Name="../sdk/lib/bus/iic/sensor/sensor_siv121du.c">
+              <FileOption/>
+            </File>
+            <File Name="../sdk/lib/bus/iic/sensor/sensor_sc101iot.c">
+              <FileOption/>
+            </File>
           </VirtualDirectory>
           <VirtualDirectory Name="gsensor">
             <File Name="../sdk/lib/bus/iic/gsensor/da280.c">
@@ -4937,7 +4952,13 @@ Board: txw81x
         <File Name="../sdk/app/halibaduo/hali_picture.c">
           <FileOption/>
         </File>
-        <File Name="../sdk/app/halibaduo/hali_picture.h"/>
+        <File Name="../sdk/app/halibaduo/hali_picture.h">
+          <FileOption/>
+        </File>
+        <File Name="../sdk/app/halibaduo/hali_gsensor.c">
+          <FileOption/>
+        </File>
+        <File Name="../sdk/app/halibaduo/hali_gsensor.h"/>
       </VirtualDirectory>
     </VirtualDirectory>
   </VirtualDirectory>

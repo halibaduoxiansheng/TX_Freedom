@@ -185,6 +185,11 @@ struct hgtimer_v4 timer2 = {
     .irq_num = TIM2_IRQn,
 };
 
+struct hgtimer_v4 timer3 = {
+    .hw      = TIMER3_BASE,
+    .irq_num = TIM3_IRQn,
+};
+
 struct hgtimer_v7 simtimer0 = {
     .hw      = SIMPLE_TIMER0_BASE,
     .irq_num = STMR012345_IRQn,
@@ -200,7 +205,8 @@ struct hgpwm_v0 pwm = {
     .channel[0] = (void *) &timer0,
     .channel[1] = (void *) &timer1,
     .channel[2] = (void *) &timer2,
-    .channel[3] = (void *) &simtimer0,
+    .channel[3] = (void *) &timer3,
+    .channel[4] = (void *) &simtimer0,
 };
 
 struct hgcapture_v0 capture = {
@@ -413,6 +419,7 @@ void device_init(void)
 
     hgi2s_v0_attach(HG_IIS0_DEVID, &i2s0);
     hgi2s_v0_attach(HG_IIS1_DEVID, &i2s1);
+    // hgi2s_v0_attach(HG_IIS2_DEVID, &i2s2);
     //hguart_v3_attach(HG_UART4_DEVID, &uart4);
     //hguart_v3_attach(HG_UART5_DEVID, &uart5);
     //hgspi_v2_attach(HG_SPI5_DEVID, &spi5);
@@ -487,13 +494,16 @@ void device_init(void)
     hgsdh_attach(HG_SDIOHOST_DEVID, &sdh);
 #endif
 
-    hgpwm_v0_attach(HG_PWM0_DEVID, &pwm);
+    // hgpwm_v0_attach(HG_PWM0_DEVID, &pwm);
     hgtimer_v4_attach(HG_TIMER0_DEVID, &timer0);
-#if PWM_EN
-    hgtimer_v4_attach(HG_TIMER0_DEVID, &timer0);
+#if 1//PWM_EN
+    //hgtimer_v4_attach(HG_TIMER0_DEVID, &timer0);
     hgtimer_v4_attach(HG_TIMER1_DEVID, &timer1);
+    hgtimer_v4_attach(HG_TIMER2_DEVID, &timer2);
+    hgtimer_v4_attach(HG_TIMER3_DEVID, &timer3);
     hgtimer_v7_attach(HG_SIMTMR0_DEVID, &simtimer0);
-    hgpwm_v0_attach(HG_PWM0_DEVID, &pwm);
+    //hgpwm_v0_attach(HG_PWM0_DEVID, &pwm);
+
     hgcapture_v0_attach(HG_CAPTURE0_DEVID, &capture);
 #endif
 //    hg_gmac_v2_attach(HG_ETH_GMAC_DEVID, &gmac);
@@ -519,6 +529,7 @@ void device_init(void)
 	spi_nor_attach(&flash0, HG_FLASH0_DEVID);
 
 //    hgi2c_v1_attach(HG_I2C0_DEVID, &iic0);
+	 hgi2c_v1_attach(HG_I2C1_DEVID, &iic1);
     hgspi_v3_attach(HG_SPI1_DEVID, &spi1);
     hgi2c_v1_attach(HG_I2C2_DEVID, &iic2);
 //    hgi2c_attach(HG_I2C3_DEVID, &iic3);

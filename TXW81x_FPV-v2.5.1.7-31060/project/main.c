@@ -163,7 +163,9 @@ __weak void user_io_preconfig()
 
 __weak void user_protocol()
 {
-    spook_init();
+    if (tx_orl.tx_flag) {
+        spook_init();
+    }
 }
 
 __weak void user_hardware_config()
@@ -338,21 +340,25 @@ sysevt_hdl_res sysevt_wifi_event(uint32 event_id, uint32 data, uint32 priv){
             user_sta_del((char *)mac);
 			aid_to_mac((uint16)data,mac);
             g_wifi.is_connected = 0;
+            printf("AP wifi is disconnected\r\n");
             break;
         case SYSEVT_WIFI_CONNECTTED:
             user_sta_add((char *)mac);
 			aid_to_mac((uint16)data,mac);
             g_wifi.is_connected = 1;
+            printf("AP wifi is connected\r\n");
             break;
 		case SYSEVT_WIFI_STA_DISCONNECT:
             user_sta_del((char *)mac);
 			aid_to_mac((uint16)data,mac);
             g_wifi.is_connected = 0;
+            printf("STA wifi is disconnected\r\n");
 			break;
 		case SYSEVT_WIFI_STA_CONNECTTED:
             user_sta_add((char *)mac);	
 			aid_to_mac((uint16)data,mac);		
             g_wifi.is_connected = 1;
+            printf("STA wifi is connected\r\n");
 			break;			
 		case SYSEVT_WIFI_STA_PS_START:
 			//sta_ps_mode_enter((uint16)data);
