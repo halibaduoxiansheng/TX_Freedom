@@ -25,6 +25,7 @@ struct G_TX_Ota {
 uint8_t hali_ota_handle_event(int event);
 
 uint8_t bkapi_upgrade_init(uint16_t seq_num);
+int bkapi_upgrade_data(uint16_t seq_num, char *page, uint32 len);
 
 extern struct G_TX_Ota g_ota;
 

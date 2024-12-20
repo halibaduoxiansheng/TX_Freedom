@@ -39,6 +39,7 @@ enum {
     OP_LED_OFF = 0,
     OP_LED_ON = 1,
 };
+
 uint8_t hali_appLibLedCallBack(struct cProLed* led) // led_callback
 {	
 	if(led == NULL)
@@ -69,7 +70,7 @@ uint8_t hali_appLibLedCallBack(struct cProLed* led) // led_callback
 				//led on			
 				if(sensor_ols.offline_flag == 0) // sensor is online
 				{
-                    // XXX
+                    hali_set_linght_mode_3(&camera_led, LED_NOT_BLINK, LED_NEED_LINGHT);
 				} else {
                     return 1;
                 }
@@ -80,7 +81,7 @@ uint8_t hali_appLibLedCallBack(struct cProLed* led) // led_callback
 				led->ledStatus = OP_LED_OFF;
 				if(sensor_ols.offline_flag == 0) // sensor is online
 				{
-                    // XXX
+                    hali_set_linght_mode_3(&camera_led, LED_NOT_BLINK, LED_NEED_DARK);
 				} else {
                     return 1;
                 }
@@ -214,7 +215,15 @@ void hali_set_linght_mode(struct G_TX_LED *param1, uint8_t param2, ...)
     va_end(args);
 }
 #else
-void hali_set_linght_mode_6(struct G_TX_LED *param1, uint8_t param2, uint8_t param3, uint8_t param4, uint8_t param5, uint8_t param6) 
+/**
+ * @param param1 led onject
+ * @param param2 blink flag
+ * @param param3 blink count (66 meaning forever)
+ * @param param4 basic unit
+ * @param param5 bright time
+ * @param param6 dark time
+ */
+void hali_set_linght_mode_6(struct G_TX_LED *param1, uint8_t param2, uint16_t param3, uint8_t param4, uint8_t param5, uint8_t param6) 
 {
     if (param1 == NULL) {
         printf("hali_set_linght_mode failed,this is a NULL arg\r\n"); 
@@ -229,7 +238,7 @@ void hali_set_linght_mode_6(struct G_TX_LED *param1, uint8_t param2, uint8_t par
             param1->dark_time = param6;
             param1->need_level = !param1->read_level(param1);
         } else {
-            printf("hali_set_linght_mode failed,some on args is invail\r\n");
+            printf("hali_set_linght_mode failed,some one of args is invail\r\n");
         }
     }
 }
@@ -244,7 +253,7 @@ void hali_set_linght_mode_3(struct G_TX_LED *param1, uint8_t param2, uint8_t par
         // printf("param3 is %d\r\n", param3);
         param1->is_blink = 0;
         if (param3 == 0) {
-            param1->need_level = !param1->active_level;
+                param1->need_level = !param1->active_level;
         } else {
             param1->need_level = param1->active_level;
         }
@@ -279,20 +288,33 @@ void hali_led_hander(struct Double_link_list *target)
     if (led->read_level) {
         led->led_level = led->read_level(led); // read local led level
         // printf("led->led_level is %d, led->need_level is %d\r\n", led->led_level, led->need_level);
+    } else {
+        printf("Func of led->read_level is NULL\r\n");
     }
 
+    // calc ticks
+    // printf("led->is_blink is %d, led->blink_count is %d\r\n", led->is_blink, led->blink_count);
     if (led->is_blink && led->blink_count > 0) {
         if (led->led_level == led->active_level) { // light now then start ticks
             led->bright_ticks++;
             led->dark_ticks = 0;
             led->is_light = 1;
+            // printf("now is linght\r\n");
         } else {
             led->bright_ticks = 0;
             led->dark_ticks++;
             led->is_light = 0;
+            // printf("now is dark\r\n");
         }
+    } else if (led->is_blink && led->blink_count <= 0){ 
+        led->is_blink = 0;
+        led->need_level = !led->active_level; // should with dark led over status
+    } else { // is not blink
+        led->bright_ticks = 0;
+        led->dark_ticks = 0;
     }
 
+    // printf("led->bright_ticks is %d, led->dark_ticks is %d\r\n", led->bright_ticks, led->dark_ticks);
     if (led->led_level != led->need_level) { // mean led mode should change
          if (led->is_blink) {
             switch(led->state) {
@@ -312,7 +334,7 @@ void hali_led_hander(struct Double_link_list *target)
                             led->need_level = !led->need_level;
                             led->dark_ticks = 0;
                             led->turn_off(led);
-                            if (led->blink_count != 66) {
+                            if (led->blink_count != 66) { // 66 meaning forever
                                 led->blink_count--;
                             }
                      }
@@ -333,6 +355,31 @@ void hali_led_hander(struct Double_link_list *target)
          } else { // not blink
             led->set_light(led);
          }
+    }
+}
+
+/// please use above frame, you just need put your needs in it (the function is hali_set_linght_mode)
+void hali_led_define_youself(void)
+{
+    void *thread;
+    static uint8_t have_define = 0;
+    if (have_define == 0) {
+        // printf("%s:%d\r\n", __FUNCTION__, __LINE__);
+        csi_kernel_task_new((k_task_entry_t)led_check_thd.trd_func, led_check_thd.stack_name, led_check_thd.args, led_check_thd.priority, 0, NULL, led_check_thd.stack_size, &thread);
+        have_define = 1;
+    }
+}
+
+
+static void hali_led_thread(void *arg)
+{
+    struct Double_link_list *target = NULL;
+    for (;;os_sleep_ms(led_thd.interval)) {
+        for (target = tx_dlink_head->next; target != tx_dlink_tail; target = target->next) {
+            if (target->type == LED_TYPE) {
+                hali_led_hander(target);
+            }
+        }
     }
 }
 
@@ -360,35 +407,10 @@ void hali_led_hander(struct Double_link_list *target)
 	非充电中：
 		红、绿灯熄灭
 */
-#define LED_NOT_BLINK   0
-#define LED_IS_BLINK    1
-#define LED_NEED_LINGHT 1
-#define LED_NEED_DARK   0
-/// please use above frame, you just need put your needs in it (the function is hali_set_linght_mode)
-void hali_led_define_youself(void)
-{
-    void *thread;
-    static uint8_t have_define = 0;
-    if (have_define == 0) {
-        // printf("%s:%d\r\n", __FUNCTION__, __LINE__);
-        csi_kernel_task_new((k_task_entry_t)led_check_thd.trd_func, led_check_thd.stack_name, led_check_thd.args, led_check_thd.priority, 0, NULL, led_check_thd.stack_size, &thread);
-        have_define = 1;
-    }
-}
-
-
-static void hali_led_thread(void *arg)
-{
-    struct Double_link_list *target = NULL;
-    for (;;os_sleep_ms(led_thd.interval)) {
-        for (target = tx_dlink_head->next; target != tx_dlink_tail; target = target->next) {
-            if (target->type == LED_TYPE) {
-                hali_led_hander(target);
-            }
-        }
-    }
-}
-
+/**
+ * 软件定时不可能准的 所以   4 4 => 慢闪   2 2 => 快闪
+ * if you want powerOn immediately show, please input some code in your powerOn Function
+ */
 static void hali_led_check_thread(void *args)
 {
     // printf("%s:%d\r\n", __FUNCTION__, __LINE__);
@@ -400,11 +422,12 @@ static void hali_led_check_thread(void *args)
         return ;
     }
     for (;;os_sleep_ms(led_ck->interval)) {
-        if (tx_power.is_powerOn) { // power on 
+        if (tx_power.is_powerOn) { // power on
+            hali_set_linght_mode_3(&camera_led, LED_NOT_BLINK, LED_NEED_LINGHT);
             if (tx_power.is_charging) { // power on + is charging
                 if (tx_power.is_full) { // power on + is charging + full
                     if (!g_wifi.is_connected) { // power on + is charging + full + wifi not connected
-                        hali_set_linght_mode_6(&green_led, LED_IS_BLINK, 66, 1, 500, 500);
+                        hali_set_linght_mode_6(&green_led, LED_IS_BLINK, 66, 1, 4, 4);
                         hali_set_linght_mode_3(&red_led, LED_NOT_BLINK, LED_NEED_DARK);
                     } else {  // power on + is charging + full + wifi connected
                         hali_set_linght_mode_3(&green_led, LED_NOT_BLINK, LED_NEED_LINGHT);
@@ -412,7 +435,8 @@ static void hali_led_check_thread(void *args)
                     }
                 } else { //power on + is charging + not full
                     if (!g_wifi.is_connected) { // power on + is charging + not full + wifi not connected
-                        hali_set_linght_mode_6(&green_led, LED_IS_BLINK, 66, 1, 500, 500);
+                        // printf("should print this code\r\n");
+                        hali_set_linght_mode_6(&green_led, LED_IS_BLINK, 66, 1, 4, 4);
                         hali_set_linght_mode_3(&red_led, LED_NOT_BLINK, LED_NEED_LINGHT);
                     } else {  // power on + is charging + not full + wifi connected
                         hali_set_linght_mode_3(&green_led, LED_NOT_BLINK, LED_NEED_LINGHT);
@@ -423,22 +447,23 @@ static void hali_led_check_thread(void *args)
                 if (tx_power.need_remind_battery) { // power on + not charging + low battery
                     if (g_wifi.is_connected) { // poweron + not charging + low battery + wifi connected
                         hali_set_linght_mode_3(&green_led, LED_NOT_BLINK, LED_NEED_LINGHT);
-                        hali_set_linght_mode_6(&red_led, LED_IS_BLINK, 66, 1, 250, 250);
+                        hali_set_linght_mode_6(&red_led, LED_IS_BLINK, 66, 1, 2, 2);
                     } else { // poweron  + not charging + low battery + wifi not connected
-                        hali_set_linght_mode_6(&green_led, LED_IS_BLINK, 66, 1, 500, 500);
-                        hali_set_linght_mode_6(&red_led, LED_IS_BLINK, 66, 1, 250, 250);
+                        hali_set_linght_mode_6(&green_led, LED_IS_BLINK, 66, 1, 4, 4);
+                        hali_set_linght_mode_6(&red_led, LED_IS_BLINK, 66, 1, 2, 2);
                     }
                 } else { // power on + not charging + not low battery
                     if (g_wifi.is_connected) { // poweron + not charging + not low battery + wifi connected
                         hali_set_linght_mode_3(&green_led, LED_NOT_BLINK, LED_NEED_LINGHT);
                         hali_set_linght_mode_3(&red_led, LED_NOT_BLINK, LED_NEED_DARK);
                     } else { // poweron  + not charging + not low battery + wifi not connected
-                        hali_set_linght_mode_6(&green_led, LED_IS_BLINK, 1, 66, 500, 500);
+                        hali_set_linght_mode_6(&green_led, LED_IS_BLINK, 1, 66, 4, 4);
                         hali_set_linght_mode_3(&red_led, LED_NOT_BLINK, LED_NEED_DARK);
                     }
                 }
             }
         } else { // power off
+            hali_set_linght_mode_3(&camera_led, LED_NOT_BLINK, LED_NEED_DARK);
             if (tx_power.is_charging) { // power off + is charging
                 if (tx_power.is_full) { // power off + is charging + full
                     hali_set_linght_mode_3(&green_led, LED_NOT_BLINK, LED_NEED_DARK);

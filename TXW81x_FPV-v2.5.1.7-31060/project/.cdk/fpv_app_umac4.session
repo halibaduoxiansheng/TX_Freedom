@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Session Name="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\project\fpv_app_umac4.cdkws">
-  <int Value="5" Name="m_selectedTab"/>
+  <int Value="25" Name="m_selectedTab"/>
   <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\project\fpv_app_umac4.cdkws" Name="m_workspaceName"/>
   <TabInfoArray Name="TabInfoArray">
     <TabInfo>
@@ -13,14 +13,14 @@
     <TabInfo>
       <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_button.c" Name="FileName"/>
       <int Value="141" Name="FirstVisibleLine"/>
-      <int Value="158" Name="CurrentLine"/>
+      <int Value="157" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
       <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\halibaduo.c" Name="FileName"/>
-      <int Value="1010" Name="FirstVisibleLine"/>
-      <int Value="1027" Name="CurrentLine"/>
+      <int Value="982" Name="FirstVisibleLine"/>
+      <int Value="1000" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
@@ -40,36 +40,36 @@
     </TabInfo>
     <TabInfo>
       <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_led.c" Name="FileName"/>
-      <int Value="206" Name="FirstVisibleLine"/>
-      <int Value="224" Name="CurrentLine"/>
+      <int Value="265" Name="FirstVisibleLine"/>
+      <int Value="280" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
       <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_network.c" Name="FileName"/>
-      <int Value="743" Name="FirstVisibleLine"/>
-      <int Value="761" Name="CurrentLine"/>
+      <int Value="3" Name="FirstVisibleLine"/>
+      <int Value="21" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
       <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_wifi.c" Name="FileName"/>
       <int Value="38" Name="FirstVisibleLine"/>
-      <int Value="51" Name="CurrentLine"/>
+      <int Value="45" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
       <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_picture.c" Name="FileName"/>
       <int Value="248" Name="FirstVisibleLine"/>
-      <int Value="264" Name="CurrentLine"/>
+      <int Value="259" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
     <TabInfo>
       <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\lib\video\dvp\cmos_sensor\csi_v2.c" Name="FileName"/>
-      <int Value="1003" Name="FirstVisibleLine"/>
-      <int Value="1017" Name="CurrentLine"/>
+      <int Value="1067" Name="FirstVisibleLine"/>
+      <int Value="1092" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>
@@ -125,7 +125,63 @@
     <TabInfo>
       <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_energy.c" Name="FileName"/>
       <int Value="209" Name="FirstVisibleLine"/>
-      <int Value="224" Name="CurrentLine"/>
+      <int Value="225" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\lib\bus\iic\sensor\sensor_bf20a6.c" Name="FileName"/>
+      <int Value="0" Name="FirstVisibleLine"/>
+      <int Value="6" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\lib\bus\iic\sensor\sensor_bf3703.c" Name="FileName"/>
+      <int Value="0" Name="FirstVisibleLine"/>
+      <int Value="6" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\lib\bus\iic\sensor\sensor_bf3a03.c" Name="FileName"/>
+      <int Value="0" Name="FirstVisibleLine"/>
+      <int Value="6" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\lib\bus\iic\sensor\sensor_gc0311.c" Name="FileName"/>
+      <int Value="0" Name="FirstVisibleLine"/>
+      <int Value="6" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\lib\bus\iic\sensor\sensor_gc0312.c" Name="FileName"/>
+      <int Value="0" Name="FirstVisibleLine"/>
+      <int Value="6" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\lib\bus\iic\sensor\sensor_siv121du.c" Name="FileName"/>
+      <int Value="30" Name="FirstVisibleLine"/>
+      <int Value="6" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\project\device.c" Name="FileName"/>
+      <int Value="479" Name="FirstVisibleLine"/>
+      <int Value="500" Name="CurrentLine"/>
+      <wxArrayString Name="Bookmarks"/>
+      <IntVector Name="CollapsedFolds"/>
+    </TabInfo>
+    <TabInfo>
+      <wxString Value="D:\i4season_TX\Halibaduo_TX\TX_Freedom-master\TXW81x_FPV-v2.5.1.7-31060\sdk\app\halibaduo\hali_gsensor.c" Name="FileName"/>
+      <int Value="202" Name="FirstVisibleLine"/>
+      <int Value="212" Name="CurrentLine"/>
       <wxArrayString Name="Bookmarks"/>
       <IntVector Name="CollapsedFolds"/>
     </TabInfo>

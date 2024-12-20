@@ -10,7 +10,7 @@ struct firmwareHeader
 {
 	int32_t magic;	 /*Firmware Magic*/
 	uint8_t md5[32]; /*firmware md5*/
-	int32_t size;	 /*firmware size*/
+	int32_t size;	 /*firmware size(not include any header)*/
 } __attribute__((__packed__));
 
 typedef struct bkSoc_UpgradeCtx_t
@@ -25,9 +25,9 @@ typedef struct bkSoc_UpgradeCtx_t
 	uint16_t seqno_init; // 总序号的指 给到ota的初始值
 	uint16_t seqno_data; // fireware seqno(从 seqno_init开始)
 	struct firmwareHeader fw_header;
-	int32_t rcv_size;
+	int32_t rcv_size;/*start with 0，recode the ota all received Bytes num*/
 	uint8_t upgrade_ok;
-} bkSoc_UpgradeCtx;
+} __attribute__((__packed__)) bkSoc_UpgradeCtx;
 bkSoc_UpgradeCtx bkUpgrade = {.have_init = 0};
 
 uint8_t hali_ota_handle_event(int event)
@@ -37,6 +37,9 @@ uint8_t hali_ota_handle_event(int event)
 		if (!g_ota.is_inited) {
 			memset(&g_ota, 0, sizeof(g_ota));
 			g_ota.offset = 0; // emphasize
+			g_ota.is_inited = 1;
+		} else {
+			return; // already inited
 		}
 #if DVP_EN
 		void *dvp = (void *)dev_get(HG_DVP_DEVID);
@@ -49,11 +52,13 @@ uint8_t hali_ota_handle_event(int event)
 #if USB_EN
 		SYSCTRL_REG_OPT(sysctrl_usb20_clk_close());
 #endif
+		
 		delay_ms(200);
 	}
 	else if (event == OP_FIRM_DATA) 
 	{
 		mcu_watchdog_feed();
+		g_ota.is_running = 1;
 	}
 	else if (event == OP_FIRM_END)
 	{
@@ -69,7 +74,7 @@ uint8_t bkapi_upgrade_init(uint16_t seq_num)
 
 	if (bkUpgrade.have_init == 1)
 	{
-		os_printf("upgrade have init!!! something wrong\r\n");
+		os_printf("upgrade have init, check again\r\n");
 		if (bkUpgrade.seqno_init != seq_num)
 		{
 			os_printf("new seqno:%d/%d upgrade init\r\n", bkUpgrade.seqno_init, seq_num);
@@ -96,7 +101,7 @@ int bkapi_upgrade_data(uint16_t seq_num, char *page, uint32 len)
 {
 	struct firmwareHeader *fhead = NULL;
 	char *pay = NULL;
-	uint32 paylen;
+	uint32 paylen; /*data size (not include ota header)*/
 	int res = 0;
 
 	if (!page || !len)
@@ -119,8 +124,9 @@ int bkapi_upgrade_data(uint16_t seq_num, char *page, uint32 len)
 			return 0;
 		}
 		g_ota.flag = 1;
-		os_printf("first upgrade data:%d\r\n", seq_num);
+		os_printf("first upgrade data seqno:%d\r\n", seq_num);
 		bkUpgrade.seqno_data = seq_num;
+		// printf("the first upgrade data seqno:%d\r\n", seq_num);
 		// init firmware struct
 		if (len < sizeof(struct firmwareHeader))
 		{
@@ -135,12 +141,14 @@ int bkapi_upgrade_data(uint16_t seq_num, char *page, uint32 len)
 		}
 
 		pay += sizeof(struct firmwareHeader); // pay 从此是从 firmwareHeader 后的开始 (只有第一次会发送 暂时只使用两个 size 和 magic)
-		paylen -= sizeof(struct firmwareHeader);
+		paylen -= sizeof(struct firmwareHeader); // 只有第一个包会带有 ota 头
 	}
 	else if (seq_num != (bkUpgrade.seqno_data + 1))
-	{ // 帧没按顺序发 掉了帧
+	{
+		// TODO 现在的问题所在！！！
+		// 帧没按顺序发 掉了帧
 		// return successl just send ack to peer  may be disorder
-		os_printf("data seq wrong:%d/%d\r\n", seq_num, bkUpgrade.seqno_data);
+		// os_printf("data seq wrong:%d/%d\r\n", seq_num, bkUpgrade.seqno_data);
 		return 0;
 	}
 	if (paylen > FLASH_WRITE_MAX_SIZE)
@@ -149,24 +157,24 @@ int bkapi_upgrade_data(uint16_t seq_num, char *page, uint32 len)
 		return -4;
 	}
 
-	if (bkUpgrade.rcv_size + paylen == fhead->size)
-	{ // last received data
+	if (bkUpgrade.rcv_size + paylen == fhead->size) // last received data
+	{ 
 		os_printf("firmware last part receive\r\n");
 		if (libota_write_fw(fhead->size, g_ota.offset, pay, paylen))
 		{
 			os_printf("firmware last write failed\r\n");
 			return -5;
 		}
-		os_printf("firmware wirte finish check it\r\n");
+		os_printf("firmware write finish check it\r\n");
 		return 0;
 	}
-	else if (bkUpgrade.rcv_size + paylen > fhead->size)
-	{ // error
+	else if (bkUpgrade.rcv_size + paylen > fhead->size) // error (receive size bigger than firmware size)
+	{ 
 		os_printf("firmware size attack:[%d/%d]\r\n", bkUpgrade.rcv_size + paylen, fhead->size);
 		return -8;
 	}
 	else
-	{ // normal
+	{ 	// normal
 		res = libota_write_fw(fhead->size, g_ota.offset, pay, paylen);
 		if (res)
 		{
@@ -175,9 +183,9 @@ int bkapi_upgrade_data(uint16_t seq_num, char *page, uint32 len)
 		}
 		else
 		{
-			bkUpgrade.rcv_size += paylen;
-			bkUpgrade.seqno_data = seq_num;
-			g_ota.offset += paylen;
+			bkUpgrade.rcv_size += paylen; // renew the recvive size
+			bkUpgrade.seqno_data = seq_num; // renew the local seqno to remote seqno equal
+			g_ota.offset += paylen; // renew the offset
 			os_printf("firmware wirte successful[%d:%d/%d]\r\n", bkUpgrade.seqno_data, bkUpgrade.rcv_size, bkUpgrade.fw_header.size);
 		}
 	}

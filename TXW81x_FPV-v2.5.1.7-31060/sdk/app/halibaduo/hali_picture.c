@@ -1,6 +1,8 @@
 #include "hali_picture.h"
 #include "hali_wifi.h"
+#include "hali_ota.h"
 #include "hali_energy.h"
+#include "hali_gsensor.h"
 
 
 
@@ -91,8 +93,8 @@ void video_add_pkt_header(TV_HDR_PARAM_PTR param)
 	elem_tvhdr->frameCnt = param->frame_cnt;
 	elem_tvhdr->seq = tseq++;
 
-	elem_tvhdr->gsensorSupport = 0;
-	elem_tvhdr->gsensorData = 0;
+	elem_tvhdr->gsensorSupport = g_tx_sensor.is_open;
+	elem_tvhdr->gsensorData = g_tx_sensor.gsensorData;
 	
 	elem_tvhdr->focusData = 0;
 	elem_tvhdr->reservedData = 0;	
@@ -137,9 +139,13 @@ void hali_video_close(void)
 
 void hali_video_open(void)
 {
-	//创建接收流
-	tx_pic->s = open_stream(R_RTP_JPEG,0,8,audio_opcode_func,NULL);//_available
-	start_jpeg();
+	// printf("tx_pic->open_flag is %d\r\n", tx_pic->open_flag);
+	if (tx_pic->open_flag == 0) { // 少写一个 = 号 ！！！！
+		//创建接收流
+		tx_pic->s = open_stream(R_RTP_JPEG,0,8,audio_opcode_func,NULL);//_available
+		start_jpeg();
+		tx_pic->open_flag = 1;
+	}
 }
 
 TV_HDR_PARAM_ST jpg_header;
@@ -207,7 +213,7 @@ static void send_udp_data_limit_bytes(int sockfd, uint8_t* data, uint32_t data_l
 			// printf("jpg_header->is_eof is %d\r\n", jpg_header.is_eof);
 			last_send_size = 1; // 跳出循环 （ != 0 就可以）
 			jpg_header.frame_id = --frame_mem_id;
-			printf("send a picture\r\n");
+			// printf("send a picture\r\n");
 			calc_flag = 0;
 		} else {
 			jpg_header.is_eof = 0;
@@ -218,11 +224,11 @@ static void send_udp_data_limit_bytes(int sockfd, uint8_t* data, uint32_t data_l
 		video_add_pkt_header(&jpg_header);
 
 		do { // send data
-			printf("jpg_header.frame_id is %d, jpg_header.is_eof is %d, jpg_header.frame_cnt is %d\r\n", jpg_header.frame_id, jpg_header.is_eof, jpg_header.frame_cnt);
+			// printf("jpg_header.frame_id is %d, jpg_header.is_eof is %d, jpg_header.frame_cnt is %d\r\n", jpg_header.frame_id, jpg_header.is_eof, jpg_header.frame_cnt);
 			send_bytes = sendto(sockfd, send_data_pos, send_size, MSG_DONTWAIT, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
 			if (send_bytes <= 0) {
 				/* err */
-				printf("udp send err:%d\r\n", send_bytes); // 暂未发现连续失败两次的情况，其余均为丢包，发送是发送成功
+				// printf("udp send err:%d\r\n", send_bytes); // 暂未发现连续失败两次的情况，其余均为丢包，发送是发送成功
 				os_sleep_ms(3);
 			} else {
 				// printf("send success\r\n");
@@ -245,6 +251,10 @@ static void send_udp_data_limit_bytes(int sockfd, uint8_t* data, uint32_t data_l
 
 static void hali_picture_thread(void *arg)
 {
+	struct TX_PIC_Thd *pic_thd = NULL;
+	if (arg != NULL) {
+		pic_thd = (struct TX_PIC_Thd *)arg;
+	}
 	// printf("%s:%d\r\n", __FUNCTION__, __LINE__);
 	static uint8_t have_start_jpeg = 0;
 	uint8_t is_end = 0;
@@ -264,14 +274,18 @@ static void hali_picture_thread(void *arg)
 
 	//启动jpeg(内部就是创建一个发送流,会绑定R AT_SAVE_PHOTO)
 	
-	while(1) {
+	for (;;os_sleep_ms(pic_thd->interval)) {
 		if (tx_power.is_powerOn && have_start_jpeg == 0) {
-			start_jpeg();
+			// start_jpeg();
 			have_start_jpeg = 1;
 		}
-		if (WIFI_RUN_STATUS == WIFI_IS_RUNNING) { // TODO open video connected
+		if (g_ota.is_running) {
+			os_sleep_ms(500);
+			continue;
+		}
+		if (WIFI_RUN_STATUS == WIFI_IS_RUNNING) { 
 			os_mutex_lock(&tx_pic->mutex, OS_MUTEX_WAIT_FOREVER);
-			if(!tx_pic->hava_client) { 
+			if(!tx_pic->have_client) { 
 				os_sleep_ms(20);
 				os_mutex_unlock(&tx_pic->mutex);
 				continue;
@@ -320,6 +334,17 @@ static void hali_picture_thread(void *arg)
 							is_end = 1;
 							total_len = 0 ;
 						}
+#if 0 // DEBUG
+						struct sockaddr_in client_addr = pic_client[tx_pic->client_index].addr;
+						// 打印 IP 地址
+						char ip_str[INET_ADDRSTRLEN];
+						inet_ntoa(client_addr.sin_addr);  // 将二进制 IP 地址转化为字符串
+						// 打印端口（注意：端口是网络字节序，需要使用 ntohs 转换为主机字节序）
+						unsigned short port = ntohs(client_addr.sin_port);
+						printf("Client IP: %s, Port: %d\n", inet_ntoa(client_addr.sin_addr), port);
+#endif
+						pic_client[tx_pic->client_index].addr.sin_port = htons(g_wifi.port);
+
 						// private protocol
 						send_udp_data_limit_bytes(g_wifi.connect_sock, jpeg_buf_addr, send_len, pic_client[tx_pic->client_index].addr,
 									jpg_len, VIDEO_SEND_MAX_LEN, SEND_MAX_TRY, is_end);
@@ -351,8 +376,8 @@ void hali_picture_register(void)
         .stack_size = 4096,
         .stack_name = "hali_pic",
         .priority = 10,
-        .interval = 1,
-        .args = tx_pic,
+        .interval = 3, // if you think the picture is stuck or stop, maybe you can change this code
+        .args = &pic_thd,
         .trd_func = hali_picture_thread,
     };
 }

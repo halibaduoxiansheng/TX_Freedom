@@ -5,6 +5,7 @@
 #include "hali_led.h"
 #include "hali_picture.h"
 #include "hali_wifi.h"
+#include "hali_gsensor.h"
 
 
 enum Con_Type{
@@ -17,11 +18,6 @@ enum{
 	DEV_TYPE_BK7231U_V5 = 5,
 };
 
-struct G_TX_Gsensor {
-    uint8_t open:1;
-    uint8_t reserve:7;
-};
-struct G_TX_Gsensor tx_gsr;
 
 struct G_TX_License {
     uint8_t lic_done:1;
@@ -67,7 +63,7 @@ enum {
 
 };
 
-#define HALI_BUF_SIZE 1024
+#define HALI_BUF_SIZE 1500
 #define MAGIC_HEADER 0xffeeffee
 struct G_TX_NET { // use IPV4 
     uint8_t is_inited:1;
@@ -149,12 +145,24 @@ struct cProHeader {
     int32_t	 	head;	/*protocol magic*/ // CPRO_BASIC_MAGIC
 	uint16_t 	seqNo;
 	uint16_t 	cid; /*Connection ID*/
-	int8_t 		reFlag;	/* return flag 0: ok !=0 something error */
     int8_t 		ackNeed;	/* command */
+    int8_t 		reFlag;	/* return flag 0: ok !=0 something error */
 	uint16_t 	len;  /* body data size */
-};
+}__attribute__((__packed__)); // TODO 没有加这个 奔溃了 __attribute__((__packed__))
 #define CPRO_HDR_SIZE sizeof(struct cProHeader)
 
+
+
+static int hali_net_socket(int domain, int type, int protocol)
+{
+    int sock_ty = 0;
+    if (type == CON_UDP) {
+        sock_ty = SOCK_DGRAM;
+    } else if (type == CON_TCP) { /* if users want use TCP ,please change some code for yourself~ */
+        sock_ty = SOCK_STREAM;
+    }
+    return socket(domain, sock_ty, protocol);
+}
 
 /**
  * protocol func write here, if user want add some protocol or modify somewhere , is there
@@ -225,29 +233,28 @@ static uint8_t app_deal_get_devinfo(uint8_t *buffer, int *size, struct sockaddr_
     memcpy(info->vendor, HALI_DEFAULT_OEM, strlen(HALI_DEFAULT_OEM));
     memcpy(info->version, HALI_DEFAULT_VER, strlen(HALI_DEFAULT_VER));
     memcpy(info->product, HALI_DEFAULT_PRO, strlen(HALI_DEFAULT_PRO));
-    memcpy(info->ssid, HALI_AP_PREFIX, strlen(HALI_AP_PREFIX));
+    memcpy(info->ssid, sys_cfgs.ssid, sizeof(sys_cfgs.ssid));
     memcpy(info->mac, sys_cfgs.mac, sizeof(sys_cfgs.mac));
-    info->gsensor = tx_gsr.open;
-    // info->capacity = // TODO 待看哪里需要
-    info->battery = tx_power.tx_battery;
+    info->battery = tx_power.tx_battery; 
+    // printf("tx_power.tx_battery is %d\r\n", tx_power.tx_battery);
     info->isCharge = tx_power.is_charging;
     info->isLowPowerOff = tx_power.need_remind_battery;
+    info->gsensor = g_tx_sensor.is_open;
 
     /* not use now */
     info->haveaudio = 0; /* audio flag */
     info->recordStatusSync = 0; /* recoder flag */
 
-    // info->usedbyotherapp = // TODO 
+    info->usedbyotherapp = !(pic_client_info_exist_check(addr));
 
     *size = sizeof(struct cProDevInfo);
-    pic_client_info_exist_check(addr);
 
     return 0;
 }
 
 static uint8_t app_deal_upgrade(uint8_t cid, uint8_t *buffer, int size) // param0: request ID, param1: rev all data,param2: rev all data size
 {
-    if (buffer == NULL || size <= sizeof(struct cProHeader) || cid < 0) {
+    if (buffer == NULL || size < sizeof(struct cProHeader) || cid < 0) {
         printf("someone args is invail,please check it\r\n");
         return 1;
     }
@@ -262,7 +269,7 @@ static uint8_t app_deal_upgrade(uint8_t cid, uint8_t *buffer, int size) // param
         return (bkapi_upgrade_init(prohdr->seqNo) < 0 ? 1 : 0);
     } else if (cid == CPRO_UPDATE_DATA) {
         hali_ota_handle_event(OP_FIRM_DATA);
-        ret = bkapi_upgrade_data(prohdr->seqNo, buffer + sizeof(struct cProHeader), buffer - sizeof(struct cProHeader));
+        ret = bkapi_upgrade_data(prohdr->seqNo, buffer + sizeof(struct cProHeader), size - sizeof(struct cProHeader));
 		return (ret < 0 ? -ret : 0);
     } else { // end
         g_ota.is_finish = 1;
@@ -314,7 +321,7 @@ static uint8_t app_recoder_status_set(uint8_t *buffer, int *size)
     return 0;
 }
 
-// TODO 出图卡顿问题 十分有可能出现在这个地方
+
 static int app_deal_open_video(int sockfd, struct sockaddr_in *addr, uint8_t *payload, uint8_t force_grab)
 {
 	uint16_t port = 0;
@@ -336,10 +343,10 @@ static int app_deal_open_video(int sockfd, struct sockaddr_in *addr, uint8_t *pa
 	
 	__disable_irq();
 	g_wifi.connect_sock = sockfd;
-    pic_client_info_exist_check(addr);
+    // pic_client_info_exist_check(addr);
 	if(payload){
 		os_memcpy(&port, payload, sizeof(uint16_t));
-		g_wifi.port = htons(port);
+		g_wifi.port = port; // TODO 慌乱加了 htons
 	}
 	__enable_irq();
 
@@ -350,8 +357,8 @@ static int app_deal_open_video(int sockfd, struct sockaddr_in *addr, uint8_t *pa
 		jpg_recfg(0);
 		jpg_start(0);
 		hali_video_open();
-        tx_pic->open_flag = 1;
 	}
+    tx_pic->have_client = 1;
 
 	return 0;
 }
@@ -373,8 +380,9 @@ static void _get_mac_from_cache(char *mac)
 
 
 // TODO this place should encode
-void hali_demo_thread_func_0(void *arg)
+void hali_demo_thread_func_0(void *arg) // 10005
 {
+    // printf("%s:%d\r\n", __FUNCTION__, __LINE__);
     if (arg == NULL) {
         while(1) {
             os_sleep_ms(3000);
@@ -382,20 +390,21 @@ void hali_demo_thread_func_0(void *arg)
         }
     }
     struct G_TX_NET *net = (struct G_TX_NET *)arg;
+    // printf("net->is_inited is %d, net->type is %d, net->port is %d\r\n", net->is_inited, net->type, net->port);
     fd_set rdset;
     int ret = 0;
     struct timeval tv = {0, 200000};
-    for(;; os_sleep_ms(net->interval)) {
-        if (!net->is_inited && g_wifi.is_connected) {
+    for(;;) {
+        if (!net->is_inited && tx_power.is_powerOn) {
             struct sockaddr_in _addr;
             _addr.sin_family = AF_INET;
-            _addr.sin_addr.s_addr = inet_addr(INADDR_ANY); /* Accept connection requests from any available network interface */
+            _addr.sin_addr.s_addr = htonl(INADDR_ANY); /* Accept connection requests from any available network interface */
             _addr.sin_port = htons(net->port); /* 16-bit data in host byte order is converted to network byte order. */
 
             /* auto choose suitable protocol */
-            net->socket = socket(AF_INET, net->type, 0); 
+            net->socket = hali_net_socket(AF_INET, net->type, 0); 
             if (net->socket < 0) {
-                printf("socket create failed!\r\n");
+                printf("socket create failed 1!\r\n");
                 os_sleep_ms(500);
                 net->is_inited = 0;
                 continue;
@@ -413,45 +422,54 @@ void hali_demo_thread_func_0(void *arg)
             }
 
             net->is_inited = 1; /* if code can run to there, mean everything is normal */
-        } else {
-            mcu_watchdog_feed();
-            os_sleep_ms(500);
+        } else if (!tx_power.is_powerOn){
+            os_sleep_ms(200); 
             continue;
+        } else {
+            // inside
         }
 
         if (g_wifi.is_connected) {
             FD_ZERO(&rdset);
             FD_SET(net->socket, &rdset); // if you add a socket, you should add there
+            tv.tv_sec = 0;
+		    tv.tv_usec = 200000; /*200ms*/
 
+            // printf("0 - listening \r\n");
             ret = select(net->socket+1, &rdset, NULL, NULL, &tv);  // read  ==0: timeout <0: error >0:  data ready
             if (ret < 0) {
                 printf("select failed\r\n");
-                os_sleep_ms(500); // TODO 
                 net->is_inited = 0;
                 continue;
             } else if (ret == 0) {
+                // printf("0 - northing\r\n");
                 continue;
             }
+            // printf("listened something\r\n");
 
+            hali_video_open();
             if (FD_ISSET(net->socket, &rdset)) {
                 // hendle request ready
                 struct sockaddr_in client_addr;
                 int rev_len = 0;
                 socklen_t addr_len = 0;
-
-                struct cProHeader *header; /* receive header */
-                struct cProBody *body; /* receive body */
-                rev_len = recvfrom(net->socket, net->buffer, sizeof(net->buffer), 0, (struct sockaddr *)&client_addr, &addr_len); /* keep client addr for the next snedto */
-
-                struct cProHeader *rev_header_demo = (struct cProHeader *)net->buffer;
                 
+                addr_len = sizeof(struct sockaddr);
+                memset(net->buffer, 0, sizeof(sizeof(net->buffer)));
+                rev_len = recvfrom(net->socket, net->buffer, sizeof(net->buffer), 0, (struct sockaddr *)&client_addr, &addr_len); /* keep client addr for the next snedto */
+                if (rev_len <= 0) {
+                    printf("recv failed\r\n");
+                    continue;
+                }
+                struct cProHeader *rev_header_demo = (struct cProHeader *)(net->buffer); // TODO (struct cProHeader *)net->buffer 不等于 (struct cProHeader *)(net->buffer)
                 if (rev_header_demo->head != MAGIC_HEADER) {
                     printf("bad magic header\r\n");
                     return -1;
                 }
-                
                 // private protocol
                 int send_len = 0; /* send size after analyze data */
+                pic_client_info_exist_check(&client_addr);
+                printf("rev_header_demo->cid is %d\r\n", rev_header_demo->cid);
                 switch (rev_header_demo->cid) 
                 {
                     // TODO the following func need to be accomplish 
@@ -474,6 +492,7 @@ void hali_demo_thread_func_0(void *arg)
                     case CPRO_UPDATE_DATA:
                     case CPRO_UPDATE_END:
                         rev_header_demo->reFlag = app_deal_upgrade(rev_header_demo->cid, net->buffer, rev_len);
+                        // if (rev_header_demo->relag)
                         if (rev_header_demo->cid == CPRO_UPDATE_START) {
                             rev_header_demo->len = sizeof(uint16_t);
                         } else {
@@ -505,8 +524,14 @@ void hali_demo_thread_func_0(void *arg)
                         send_len = rev_len;
                         break;
                 }
-                sendto(net->socket, net->buffer, send_len, 0, (struct sockaddr *)&client_addr, addr_len);
-                memset(net, 0, sizeof(struct G_TX_NET));
+                int send_bytes = sendto(net->socket, net->buffer, send_len, 0, (struct sockaddr *)&client_addr, addr_len);
+                // printf("%s : send_bytes is %d\r\n", __FUNCTION__, send_bytes);
+                if (g_ota.is_finish == 1)
+                {
+                    printf("ready to reset\r\n");
+                    os_sleep_ms(500);
+                    mcu_reset();
+                }
             }
         } else {
             os_sleep_ms(500);
@@ -514,8 +539,9 @@ void hali_demo_thread_func_0(void *arg)
     }
 }
 
-void hali_demo_thread_func_1(void *arg)
+void hali_demo_thread_func_1(void *arg) // 10006
 {
+    // printf("%s:%d\r\n", __FUNCTION__, __LINE__);
     if (arg == NULL) {
         while(1) {
             os_sleep_ms(3000);
@@ -525,20 +551,19 @@ void hali_demo_thread_func_1(void *arg)
     struct G_TX_NET *net = (struct G_TX_NET *)arg;
     fd_set rdset;
     int ret = 0;
-    struct timeval tv = {0, 200000};
-    for(;; os_sleep_ms(net->interval)) {
-        if (!net->is_inited && g_wifi.is_connected) {            
+    struct timeval tv = {0, 500000};
+    for(;;) {
+        if (!net->is_inited && tx_power.is_powerOn) {            
             struct sockaddr_in _addr;
 
             _addr.sin_family = AF_INET;
-            _addr.sin_addr.s_addr = inet_addr(INADDR_ANY); /* Accept connection requests from any available network interface */
+            _addr.sin_addr.s_addr = htonl(INADDR_ANY); /* Accept connection requests from any available network interface */
             _addr.sin_port = htons(net->port); /* 16-bit data in host byte order is converted to network byte order. */
 
             /* auto choose suitable protocol */
-            net->socket = socket(AF_INET, net->type, 0); 
+            net->socket = hali_net_socket(AF_INET, net->type, 0); 
             if (net->socket < 0) {
-                printf("socket create failed!\r\n");
-                os_sleep_ms(500);
+                printf("socket create failed 2!\r\n");
                 net->is_inited = 0;
                 continue;
             }
@@ -555,16 +580,20 @@ void hali_demo_thread_func_1(void *arg)
             }
 
             net->is_inited = 1; /* if code can run to there, mean everything is normal */
-        } else {
-            mcu_watchdog_feed();
-            os_sleep_ms(500);
+        } else if (!tx_power.is_powerOn) {
+            os_sleep_ms(200);
             continue;
+        } else {
+            //inside
         }
 
         if (g_wifi.is_connected) {
             FD_ZERO(&rdset);
             FD_SET(net->socket, &rdset); // if you add a socket, you should add there
+            tv.tv_sec = 0;
+		    tv.tv_usec = 200000; /*200ms*/
 
+            // printf("1 - listening \r\n");
             ret = select(net->socket+1, &rdset, NULL, NULL, &tv);  // read  ==0: timeout <0: error >0:  data ready
             if (ret < 0) {
                 printf("select failed\r\n");
@@ -572,20 +601,26 @@ void hali_demo_thread_func_1(void *arg)
                 net->is_inited = 0;
                 continue;
             } else if (ret == 0) {
+                // printf("1 - northing\r\n");
                 continue;
             }
 
+            hali_video_open();
             if (FD_ISSET(net->socket, &rdset)) {
                 // hendle request ready
                 struct sockaddr_in client_addr;
                 int rev_len = 0;
                 socklen_t addr_len = 0;
 
-                struct cProHeader *header; /* receive header */
-                struct cProBody *body; /* receive body */
+                addr_len = sizeof(struct sockaddr);
+                memset(net->buffer, 0, sizeof(sizeof(net->buffer)));
                 rev_len = recvfrom(net->socket, net->buffer, sizeof(net->buffer), 0, (struct sockaddr *)&client_addr, &addr_len); /* keep client addr for the next snedto */
+                if (rev_len <= 0) {
+                    printf("recv failed\r\n");
+                    continue;
+                }
 
-                struct cProHeader *rev_header_demo = (struct cProHeader *)net->buffer;
+                struct cProHeader *rev_header_demo = (struct cProHeader *)(net->buffer);
                 
                 if (rev_header_demo->head != MAGIC_HEADER) {
                     printf("bad magic header\r\n");
@@ -594,6 +629,7 @@ void hali_demo_thread_func_1(void *arg)
                 
                 // private protocol
                 int send_len = 0; /* send size after analyze data */
+                printf("rev_header_demo->cid is %d\r\n", rev_header_demo->cid);
                 switch (rev_header_demo->cid) 
                 {
                     // TODO the following func need to be accomplish 
@@ -619,8 +655,8 @@ void hali_demo_thread_func_1(void *arg)
                         send_len = rev_len;
                         break;
                 }
-                sendto(net->socket, net->buffer, send_len, 0, (struct sockaddr *)&client_addr, addr_len);
-                memset(net, 0, sizeof(struct G_TX_NET));
+                int send_bytes = sendto(net->socket, net->buffer, send_len, 0, (struct sockaddr *)&client_addr, addr_len);
+                // printf("%s : send_bytes is %d\r\n", __FUNCTION__, send_bytes);
             }   
         } else {
             os_sleep_ms(500);
@@ -628,8 +664,9 @@ void hali_demo_thread_func_1(void *arg)
     }
 }
 
-void hali_demo_thread_func_2(void *arg)
+void hali_demo_thread_func_2(void *arg) // 10007
 {
+    // printf("%s:%d\r\n", __FUNCTION__, __LINE__);
     if (arg == NULL) {
         while(1) {
             os_sleep_ms(3000);
@@ -639,27 +676,27 @@ void hali_demo_thread_func_2(void *arg)
     struct G_TX_NET *net = (struct G_TX_NET *)arg;
     int ret = 0;
     for (;; os_sleep_ms(net->interval)) {
-        if (!net->is_inited && g_wifi.is_connected) {
+        if (!net->is_inited && tx_power.is_powerOn) {
             struct sockaddr_in _addr;
 
             _addr.sin_family = AF_INET;
-            _addr.sin_addr.s_addr = inet_addr(INADDR_ANY); /* Accept connection requests from any available network interface */
+            _addr.sin_addr.s_addr = htonl(INADDR_ANY); /* Accept connection requests from any available network interface */
             _addr.sin_port = htons(net->port); /* 16-bit data in host byte order is converted to network byte order. */
 
             /* auto choose suitable protocol */
-            net->socket = socket(AF_INET, net->type, 0); 
+            net->socket = hali_net_socket(AF_INET, net->type, 0); 
             if (net->socket < 0) {
-                printf("socket create failed!\r\n");
-                os_sleep_ms(500);
+                printf("socket create failed 3!\r\n");
                 net->is_inited = 0;
                 continue;
             }
 
             net->is_inited = 1; /* if code can run to there, mean everything is normal */
-        } else {
-            mcu_watchdog_feed();
-            os_sleep_ms(500);
+        } else if (!tx_power.is_powerOn) {
+            os_sleep_ms(200);
             continue;
+        } else {
+            //inside
         }
 
         if (g_wifi.is_connected) {
@@ -684,16 +721,23 @@ void hali_demo_thread_func_2(void *arg)
             prohdr->seqNo = lseqNo++;
             prohdr->reFlag = 0;
 
+            evtset->battery = tx_power.tx_battery;
+            // printf("evtset->battery is %d\r\n", tx_power.tx_battery);
+            evtset->isCharge = tx_power.is_charging;
+            evtset->isLowPowerOff = tx_power.need_powerOff;
+
             
             _get_mac_from_cache(tmac);
             evtset->mac[0] = tmac[4];
             evtset->mac[1] = tmac[5];
 
-            // addr.sin_family = AF_INET;
-            // addr.sin_port = htons(pctxd->port);	
-            memcpy(&addr.sin_addr, &net->addr, sizeof(net->addr));
-            sendto(net->socket, (void *)response, CPRO_HDR_SIZE + prohdr->len, 0,
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons(net->port);	
+            addr.sin_addr = pic_client[tx_pic->client_index].addr.sin_addr;
+
+            int send_bytes = sendto(net->socket, (void *)response, CPRO_HDR_SIZE + prohdr->len, 0,
                 (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
+            // printf("%s : send_bytes is %d\r\n", __FUNCTION__, send_bytes);
         } else {
             os_sleep_ms(500);
         }
@@ -722,15 +766,21 @@ void hali_network_init(struct G_TX_NET *net)
     hali_thread_func_register(net);
 }
 
+static void g_lic_init(struct G_TX_License *g_lic) // license init
+{
+    g_lic->lic_done = 0;
+    g_lic->lic_auto_gen = 1;
+}
+
 void hali_network_register(void)
 {
     memset(&tx_net_0, 0, sizeof(struct G_TX_NET));
     memcpy(tx_net_0.name, "net_0", strlen("net_0"));
     tx_net_0 = (struct G_TX_NET) {
         .is_inited = 0,
-        .interval = 200,
-        .priority = 9,
-        .stack_size = 1024,
+        .interval = 1,
+        .priority = 8,
+        .stack_size = 2048,
         .type = CON_UDP,
         .port = 10005,
     };
@@ -739,9 +789,9 @@ void hali_network_register(void)
     memcpy(tx_net_1.name, "net_1", strlen("net_1"));
     tx_net_1 = (struct G_TX_NET) {
         .is_inited = 0,
-        .interval = 200,
+        .interval = 1,
         .priority = 9,
-        .stack_size = 1024,
+        .stack_size = 2048,
         .type = CON_UDP,
         .port = 10006,
     };
@@ -750,9 +800,9 @@ void hali_network_register(void)
     memcpy(tx_net_2.name, "net_2", strlen("net_2"));
     tx_net_2 = (struct G_TX_NET) {
         .is_inited = 0,
-        .interval = 2000,
+        .interval = 1000,
         .priority = 9,
-        .stack_size = 1024,
+        .stack_size = 2048,
         .type = CON_UDP,
         .port = 10007,
     };
@@ -761,6 +811,8 @@ void hali_network_register(void)
     hali_network_init(&tx_net_0);
     hali_network_init(&tx_net_1);
     hali_network_init(&tx_net_2);
+
+    g_lic_init(&g_lic);
 }
 
 void hali_network_thread_start(void)

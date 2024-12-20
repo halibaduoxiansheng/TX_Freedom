@@ -37,9 +37,6 @@ static void hali_gpio_init(void)
     gpio_iomap_input(tx_power.charging_io, GPIO_DIR_INPUT);	// USB_DET
 	extern struct G_TX_Button tx_button_0;
     gpio_iomap_input(tx_button_0.button_io, GPIO_IOMAP_INPUT); //power_key
-    //gpio_set_mode(GPIO_POWER_KEY, GPIO_PULL_UP, GPIO_PULL_LEVEL_100K); // 
-
-    // gpio_iomap_input(GPIO_CHARG_IN, GPIO_DIR_INPUT); // CHRG
 
     gpio_iomap_output(tx_power.mcu_io, GPIO_IOMAP_OUTPUT);    	 //mcu control 
 	gpio_set_val(tx_power.mcu_io, 0);
@@ -47,8 +44,8 @@ static void hali_gpio_init(void)
     gpio_iomap_output(red_led.led_io, GPIO_IOMAP_OUTPUT); // red and freen led     
     gpio_iomap_output(green_led.led_io, GPIO_IOMAP_OUTPUT);
     gpio_iomap_output(camera_led.led_io, GPIO_IOMAP_OUTPUT);
+    
     gpio_set_val(red_led.led_io, 0);
-    // gpio_set_val(GPIO_LED_GREEN, 0);
     gpio_set_val(green_led.led_io, 0);
     gpio_set_val(camera_led.led_io, 0);
     
@@ -80,16 +77,17 @@ void hali_powerOn(void)
     printf("power On\r\n");
     powerOn_mcu();
 
+    hali_set_linght_mode_3(&camera_led, LED_NOT_BLINK, LED_NEED_LINGHT); /*this led maybe will dark*/
+
     tx_sys_init(); // system init
-
-
+    hali_gsensor_task_run();
 
 #if TX_AUTO_BLE
 	extern void tx_ble_auto_for_project(void);
 	tx_ble_auto_for_project();
 #endif
-    tx_power.is_powerOn = 1;
-    tx_power.is_powerOff = 0; 
+    tx_power.is_powerOn = 1; /*please put these code in the last place~*/
+    tx_power.is_powerOff = 0;
 }
 
 void hali_powerOff(void)
@@ -103,6 +101,9 @@ void hali_powerOff(void)
 	extern void tx_ble_auto_for_project(void);
 	tx_ble_auto_for_project();
 #endif
+    if (tx_power.is_charging) { // this is must be have
+        mcu_reset();
+    }
 }
 
 void hali_long_press_func(void)

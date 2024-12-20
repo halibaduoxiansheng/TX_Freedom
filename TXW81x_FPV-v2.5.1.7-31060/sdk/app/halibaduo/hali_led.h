@@ -5,6 +5,11 @@
 #include "halibaduo_lib.h"
 #include "hali_list_node.h"
 
+#define LED_NOT_BLINK   0
+#define LED_IS_BLINK    1
+#define LED_NEED_LINGHT 1
+#define LED_NEED_DARK   0
+
 struct cProLed{
 	uint8_t led				:4; /*max 15 leds*/
 	uint8_t opType			:4; /*OP_GET/OP_SET*/
@@ -13,16 +18,18 @@ struct cProLed{
 }__attribute__((__packed__));
 
 
-/* Led unified structure */
+/* Led unified structure   maybe the next time we should add Gradient(渐变) color*/
 struct G_TX_LED{
     uint8_t led_show:1; /* Lighting responds to operations and changes dynamically */
     uint8_t led_id:1;
     uint8_t is_blink:1;
-    uint8_t blink_count:1;
     uint8_t active_level:1;
     uint8_t led_level:1;
     uint8_t need_level:1;
     uint8_t is_light:1; /* just blink mode use and change */
+    uint8_t reserve:1;
+    
+    uint16_t blink_count;
 
 
     uint8_t basic_unit; /* basic unit of time  -> ms*/
@@ -31,8 +38,8 @@ struct G_TX_LED{
 
     uint8_t state;
 
-    uint8_t bright_ticks;
-    uint8_t dark_ticks;
+    uint16_t bright_ticks;
+    uint16_t dark_ticks;
 
     uint8_t led_io;
 

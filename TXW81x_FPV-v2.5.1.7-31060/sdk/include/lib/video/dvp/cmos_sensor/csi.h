@@ -79,6 +79,7 @@ typedef struct {
 	P_XC7016_Fun p_xc7016_adapt;
 } _Sensor_Adpt_;
 
+/* 传感器id、写命令、读命令、地址字节数、数据字节数、ID寄存器地址 */
 typedef struct
 {       
 	uint8 id,w_cmd,r_cmd,addr_num,data_num;
@@ -190,7 +191,7 @@ int sensorCheckId(struct i2c_device *p_iic,const _Sensor_Ident_ *p_sensor_ident,
 #define SCALE_HIGH_TO_JPEG				720
 
 
-#define IPF_EN					1
+#define IPF_EN					0	//1
 #define DET_EN					0
 #define VPP_BUF1_EN				0
 #endif
@@ -252,11 +253,11 @@ int sensorCheckId(struct i2c_device *p_iic,const _Sensor_Ident_ *p_sensor_ident,
 #endif
 
 #ifndef DEV_SENSOR_GC032A
-#define DEV_SENSOR_GC032A  				(0||CMOS_AUTO_LOAD)
+#define DEV_SENSOR_GC032A  				(0)
 #endif
 
 #ifndef DEV_SENSOR_OV2640
-#define DEV_SENSOR_OV2640               0
+#define DEV_SENSOR_OV2640               (0||CMOS_AUTO_LOAD)
 #endif
 
 #ifndef DEV_SENSOR_BF2013
@@ -264,28 +265,52 @@ int sensorCheckId(struct i2c_device *p_iic,const _Sensor_Ident_ *p_sensor_ident,
 #endif
 
 #ifndef DEV_SENSOR_XC7016_H63
-#define DEV_SENSOR_XC7016_H63           0
+#define DEV_SENSOR_XC7016_H63           (0)
 #endif
 
 #ifndef DEV_SENSOR_XC7011_H63
-#define DEV_SENSOR_XC7011_H63           0
+#define DEV_SENSOR_XC7011_H63           (0)
 #endif
 
 #ifndef DEV_SENSOR_XC7011_GC1054
-#define DEV_SENSOR_XC7011_GC1054  				0
+#define DEV_SENSOR_XC7011_GC1054  				(0)
 #endif
 
 #ifndef DEV_SENSOR_XCG532
-#define DEV_SENSOR_XCG532  				0
+#define DEV_SENSOR_XCG532  				(0||CMOS_AUTO_LOAD)
 #endif
 
 #ifndef DEV_SENSOR_GC2145
-#define DEV_SENSOR_GC2145           0
+#define DEV_SENSOR_GC2145           (0)
 #endif
 
 #ifndef DEV_SENSOR_BF30A2
-#define DEV_SENSOR_BF30A2           (0||CMOS_AUTO_LOAD)
+#define DEV_SENSOR_BF30A2           (0)
 #endif
+
+#ifndef DEV_SENSOR_SC030
+#define DEV_SENSOR_SC030			(0||CMOS_AUTO_LOAD)
+#endif
+
+
+#ifndef DEV_SENSOR_SC101IOT
+#define DEV_SENSOR_SC101IOT         (0||CMOS_AUTO_LOAD)
+#endif
+
+#ifndef DEV_SENSOR_BF20A6
+#define DEV_SENSOR_BF20A6			(0||CMOS_AUTO_LOAD)
+#endif
+
+#ifndef DEV_SENSOR_SIV121DU
+#define DEV_SENSOR_SIV121DU			(0||CMOS_AUTO_LOAD)
+#endif
+
+#ifndef DEV_SENSOR_SP0A83 	// add by wangjie (listen to liuwei about this name)
+#define DEV_SENSOR_SP0A83			(0||CMOS_AUTO_LOAD)
+#endif
+
+#endif
+
 
 #if DEV_SENSOR_OV7725
 extern const _Sensor_Ident_ ov7725_init;
@@ -399,4 +424,29 @@ extern const _Sensor_Ident_ bf30a2_init;
 extern SENSOR_OP_SECTION const _Sensor_Adpt_ bf30a2_cmd;
 #endif
 
+#if DEV_SENSOR_SC030
+extern const _Sensor_Ident_ sc030_init;
+extern SENSOR_OP_SECTION const _Sensor_Adpt_ sc030_cmd;
 #endif
+
+#if DEV_SENSOR_SC101IOT
+extern const _Sensor_Ident_ sc101iot_init;
+extern SENSOR_OP_SECTION const _Sensor_Adpt_ sc101iot_cmd;
+#endif
+
+#if DEV_SENSOR_BF20A6
+extern const _Sensor_Ident_ bf20a6_init;
+extern SENSOR_OP_SECTION const _Sensor_Adpt_ bf20a6_cmd;
+#endif
+
+#if DEV_SENSOR_SIV121DU
+extern const _Sensor_Ident_ siv121du_init;
+extern SENSOR_OP_SECTION const _Sensor_Adpt_ siv121du_cmd;
+#endif
+
+#if DEV_SENSOR_SP0A83
+extern const _Sensor_Ident_ sp0a83_init;
+extern SENSOR_OP_SECTION const _Sensor_Adpt_ sp0a83_cmd;
+#endif
+
+

@@ -67,7 +67,7 @@ SENSOR_INIT_SECTION static const unsigned char GC0328InitTable[CMOS_INIT_LEN]={
     0x0B,0x00,
     0x0C,0x00,
     0x16,0x00,
-    0x17,0x14,
+    0x17,0x17,	//default£º0x14  0:0x14 180:0x17
     0x18,0x0E,
     0x19,0x06,
     0x1B,0x48,
@@ -421,7 +421,7 @@ extern struct i2c_device *iic_test;
 
 static void GC0328_rotate(uint32 r)
 {
-	int8 buf[2];
+	unsigned char buf[2];
 	buf[0] = 0x17;		//0',180'
 	buf[1] = 0x14|(r<<0);
 	//Sensor_WriteRegister(SENSOR_IIC,buf,1,1);
@@ -453,7 +453,7 @@ uint32 GC0328_hvblank(int8 dh,int8 dv)
 	return (h<<16)|v;
 }
 
-SENSOR_OP_SECTION const _Sensor_Adpt_ gc0328_cmd = 
+SENSOR_OP_SECTION const _Sensor_Adpt_ gc0328_cmd= 
 {
 	.typ = 1, //YUV
 	.pixelw = 640,
@@ -464,10 +464,10 @@ SENSOR_OP_SECTION const _Sensor_Adpt_ gc0328_cmd =
 	.rawwide = 1,//10bit
 	.colrarray = 2,//0:_RGRG_ 1:_GRGR_,2:_BGBG_,3:_GBGB_
 	.init = (uint8 *)GC0328InitTable,
-	.rotate_adapt = {0},
+	.rotate_adapt = 0,
 	//.hvb_adapt = 0x6a,0x12,0x6a,0x12,
 	. mclk = 24000000,
-	.p_fun_adapt = {GC0328_rotate,GC0328_hvblank,NULL},
+	.p_fun_adapt = GC0328_rotate,GC0328_hvblank,NULL,
 	//.p_xc7016_adapt = NULL,	
 };
 

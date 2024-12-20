@@ -53,7 +53,7 @@ static int hali_energy_bat_func(struct G_TX_Power *power)
         }
 
         cur_sum += cur_v;
-        os_sleep_ms(20);
+        os_sleep_ms(10);
     }
 
     // 去除最大值和最小值后的总和计算
@@ -63,7 +63,11 @@ static int hali_energy_bat_func(struct G_TX_Power *power)
     // 计算电池电压（单位：mV）
     int vbat = (cur_v * REF_VOLTAGE * 2) / ADC_MAX_VALUE;
 
-    os_printf("bat_ad_value:%d vbat = %d mV\r\n", cur_v, vbat); // 1677    2210mV
+    static uint8_t cnt = 0;
+    cnt++;
+    if (!(cnt % 10)) {
+        os_printf("bat_ad_value:%d vbat = %d mV\r\n", cur_v, vbat); // 1677    2210mV
+    }
 
     return cur_v;
 }
@@ -152,6 +156,9 @@ uint8_t getPowerLevel(struct G_TX_Power *power)
     }
 
     // os_printf("i4GetPowerLevel: quantity = %d, tmpV = %d.\r\n", quantity, tmpV);
+    if (quantity == 110) {
+        return 100;
+    }
     return quantity;
 }
 
@@ -215,6 +222,7 @@ void hali_energy_register(void)
 
 void hali_battrgy_program(void *args)
 {
+    static uint8_t bat_val_last = 0;
     if (args == NULL) {
         printf("some very bad thing happened\r\n");
     }
@@ -226,20 +234,21 @@ void hali_battrgy_program(void *args)
 
         power->now_bat = power->get_battery_value(power);
 
-        power->tx_battery = power->getPowerLevel(power);
+        bat_val_last = (bat_val_last == 0) ? power->getPowerLevel(power) : (power->getPowerLevel(power) + bat_val_last)/2;
+        power->tx_battery = bat_val_last;
 
         if (power->now_bat <= power->remind_bat && !power->is_charging && power->is_powerOn) {
             if (power->now_bat <= power->poweroff_bat) {
                 power->need_powerOff = 1;
+                power->need_powerOff_battery = 1;
             } else {
                 power->need_remind_battery = 1;
             }
         }
 
-        if (power->need_powerOff && power->power_off_func) { // low bat should to shut down
+        if ((power->need_powerOff || power->need_powerOff_battery) && power->power_off_func) { // low bat should to shut down
             power->power_off_func();
             power->power_off(power);
-            power->need_powerOff = 0;
         }
 
         if (power->need_remind_battery && power->remind_func) { // remind bat should to do something
@@ -252,10 +261,6 @@ void hali_battrgy_program(void *args)
             power->need_powerOn = 0;
             return;
         }
-
-        // bat upgrade
-        power->tx_battery = power->getPowerLevel(power);
-        // TODO set Device battery
     }
 }
 

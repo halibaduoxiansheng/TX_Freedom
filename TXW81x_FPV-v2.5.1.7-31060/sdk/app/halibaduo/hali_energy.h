@@ -168,8 +168,10 @@ struct G_TX_Power{
 
     struct hgadc_v0* global_hgadc_value;
 
-    uint8_t tx_battery:7; /* 0-100 */
+    uint8_t tx_battery:7; /* 0-110 */
     uint8_t is_charging:1;
+
+    // uint8_t tx_battery_array[10];
 
     
     uint8_t (*getPowerLevel)(struct G_TX_Power *);

@@ -39,7 +39,7 @@ void hali_wifiInfo_init(void)
     g_wifi = (struct G_TX_WIFI) {
         .have_inited = 0,
         .is_connected = 0,
-        .ssid = "Otoscope-",
+        .ssid = HALI_AP_PREFIX, // if you want change this, please check !
         .password = "",
         .mac_num = 2, /*1个是2个字母数字*/
     };

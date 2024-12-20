@@ -61,8 +61,8 @@ void hali_button_register(void)
         .active_level = 1,
         .button_level = 0,
         .button_io = PA_6,
-        .short_press_time = 50,
-        .long_press_time = 2200, // TODO 自己去感觉时间?相当不好
+        .short_press_time = 2,
+        .long_press_time = 1500, // TODO 自己去感觉时间?相当不好
         .state = BUTTON_IDLE,
         .wait_time = 30,
     };
@@ -75,8 +75,12 @@ void hali_button_register(void)
     hali_button_init(&tx_button_0);
 }
 
-uint16_t hali_button_getRealTime(struct G_TX_Button *button) {
+uint16_t hali_button_press_getRealTime(struct G_TX_Button *button) {
     return button->press_ticks * button->basic_unit;
+}
+
+uint16_t hali_button_release_getRealTime(struct G_TX_Button *button) {
+    return button->release_ticks * button->basic_unit;
 }
 
 void hali_button_hander(struct Double_link_list *target) // 5ms 
@@ -99,9 +103,9 @@ void hali_button_hander(struct Double_link_list *target) // 5ms
 
     uint8_t read_gpio_level = gpio_get_val(button->button_io);
 
-    if (button->press_ticks != 0 && read_gpio_level != button->active_level) {
-        printf("button->press_ticks is %d\r\n", button->press_ticks);
-    }
+    // if (button->press_ticks != 0 && read_gpio_level != button->active_level) {
+    //     printf("button->press_ticks is %d\r\n", button->press_ticks);
+    // }
 
     if (read_gpio_level != button->button_level) { /*button level have change*/
         button->button_level = read_gpio_level;
@@ -116,6 +120,7 @@ void hali_button_hander(struct Double_link_list *target) // 5ms
         }
     } else if (button->button_level != button->active_level) { // release
         // printf("release button\r\n");
+        // printf("button->state is %d\r\n", button->state);
         button->release_ticks++;
         if (button->release_ticks >= button->wait_time) {
             button->is_press = 0;
@@ -127,7 +132,7 @@ void hali_button_hander(struct Double_link_list *target) // 5ms
     }
 
     if (button->flag) { // resume
-        printf("resume\r\n");
+        // printf("resume\r\n");
         button->flag = !button->flag;
         button->is_press = 0;
         button->press_ticks = 0;
@@ -150,18 +155,13 @@ void hali_button_hander(struct Double_link_list *target) // 5ms
         }
         break;
     case BUTTON_PRESS:
-        // printf("ready to check\r\n");
-        if (hali_button_getRealTime(button) >= button->short_press_time) {
-            if (button->button_level != button->active_level) { // It's called a short press when you release it.
-                if (button->release_ticks >= button->debounce_time) {
-                    button->state = BUTTON_SHORT_PRESS;
-                    printf("we can sure ,is short press\r\n");
-                    button->short_press_count++;
-                }
-            }
+        if (hali_button_release_getRealTime(button) >= button->debounce_time) {
+            button->state = BUTTON_SHORT_PRESS;
+            // printf("we can sure ,is short press\r\n");
+            button->short_press_count++;
         }
-        // printf("hali_button_getRealTime(button) is %d\r\n", hali_button_getRealTime(button));
-        if (hali_button_getRealTime(button) >= button->long_press_time) { 
+        // printf("hali_button_press_getRealTime(button) is %d\r\n", hali_button_press_getRealTime(button));
+        if (hali_button_press_getRealTime(button) >= button->long_press_time) { 
             button->state = BUTTON_LONG_PRESS;
             break;
         }

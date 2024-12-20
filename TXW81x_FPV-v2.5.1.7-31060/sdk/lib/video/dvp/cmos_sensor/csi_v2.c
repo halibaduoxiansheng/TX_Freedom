@@ -126,6 +126,26 @@ static const _Sensor_Ident_ *devSensorInitTable[] = {
 	&bf3720_init,
 #endif
 
+#if DEV_SENSOR_SC030	//20
+	&sc030_init,
+#endif
+
+#if DEV_SENSOR_SC101IOT	//21
+	&sc101iot_init,
+#endif
+
+#if DEV_SENSOR_BF20A6
+	&bf20a6_init,
+#endif
+
+#if DEV_SENSOR_SIV121DU
+	&siv121du_init,
+#endif
+
+#if DEV_SENSOR_SP0A83
+	&sp0a83_init,
+#endif
+
 	NULL,
 };
 
@@ -210,6 +230,27 @@ static const _Sensor_Adpt_ *devSensorOPTable[] = {
 #if DEV_SENSOR_BF3720
 	&bf3720_cmd,
 #endif
+
+#if DEV_SENSOR_SC030
+	&sc030_cmd,
+#endif	
+
+#if DEV_SENSOR_SC101IOT	//20
+	&sc101iot_cmd,
+#endif
+
+#if DEV_SENSOR_BF20A6
+	&bf20a6_cmd,
+#endif
+
+#if DEV_SENSOR_SIV121DU
+	&siv121du_cmd,
+#endif
+
+#if DEV_SENSOR_SP0A83
+	&sp0a83_cmd,
+#endif
+
 
 };
 
@@ -981,10 +1022,33 @@ int sensorCheckId(struct i2c_device *p_iic,const _Sensor_Ident_ *p_sensor_ident,
 	
 	i2c_read(p_iic,u8Buf,p_sensor_ident->addr_num,(int8*)&id,p_sensor_ident->data_num);
 	os_printf("SID: %x, %x, %x, %x,%x\r\n",id,p_sensor_ident->id,u8SensorwriteID,u8SensorreadID,p_sensor_ident->id_reg);
-	if(id == p_sensor_ident->id)
+	os_printf("SID:siv121_id_test1 = %d\r\n",id);
+	if(id == p_sensor_ident->id) // id 总是等于ff
+	{	
 		return 1;
+	}
 	else
-		return -1;
+	{
+		if(u8Buf[0] == 0x01)
+		{
+			if(id == p_sensor_ident->id || id == 0x00)	//siv121du senser_id maybe is 0x00
+			{
+				if(id == 0x00)
+				{
+					os_printf("siv121_id:0x00\r\n"); // can not pass
+				}
+				return 1;
+			}
+			else
+			{
+				return -1;
+			}
+		}
+		else
+		{
+			return -1;
+		}
+	}
 }
 
 
@@ -997,6 +1061,7 @@ int sensorCheckId(struct i2c_device *p_iic,const _Sensor_Ident_ *p_sensor_ident,
 * Output         : None
 * Return         : u32i2cReadResult:the result from sensor register
 *******************************************************************************/
+unsigned char sensor_correct_flag;
 static _Sensor_Adpt_ * sensorAutoCheck(struct i2c_device *p_iic,uint8 *init_buf)
 {
 	uint8 i;
@@ -1006,7 +1071,7 @@ static _Sensor_Adpt_ * sensorAutoCheck(struct i2c_device *p_iic,uint8 *init_buf)
 		sensor_reset();
 		if(sensorCheckId(p_iic,devSensorInitTable[i],devSensorOPTable[i])>=0)
 		{
-			os_printf("id =%x num:%d \n",devSensorInitTable[i]->id,i);
+			os_printf("Camera_senser_id =%x num:%d \n",devSensorInitTable[i]->id,i);
 			devSensorInit = (_Sensor_Ident_ *) devSensorInitTable[i];
 			devSensor_Struct = (_Sensor_Adpt_ *) devSensorOPTable[i];
 			break;
@@ -1192,6 +1257,7 @@ bool csi_yuv_mode(){
 	iic_test = (struct i2c_device *)dev_get(HG_I2C2_DEVID);	
 	scale_dev = (struct scale_device *)dev_get(HG_SCALE1_DEVID);
  
+ 	dvp_close(dvp_test);	
 	dvp_init(dvp_test);
 
 //1:init iic
@@ -1207,7 +1273,15 @@ bool csi_yuv_mode(){
 	//i2c_send_stop(iic_test);
 	os_printf("iic init finish,sensor reset & set sensor clk into 6M\r\n");
 //2:init sensor
-	dvp_set_baudrate(dvp_test,6000000); 
+	
+	#if 1
+	dvp_set_baudrate(dvp_test,24000000); 	//sc030
+	printf("dvp_set_baudrate 24M\r\n");
+	#else
+	dvp_set_baudrate(dvp_test,6000000);		//default
+	printf("dvp_set_baudrate 6M\r\n");
+	#endif
+	
 	os_sleep_ms(3);
 
 	os_printf("set sensor finish ,Auto Check sensor id\r\n");
@@ -1247,6 +1321,7 @@ bool csi_yuv_mode(){
 					for(itk = 0;itk < u8Addrbytnum+u8Databytnum;itk++){
 						idbuf[itk] = p_sensor_cmd->init[i+itk];
 					}
+					// os_printf("iic_lw1:u8Addr:0x%2x u8Data:0x%2x\r\n",idbuf[0],idbuf[u8Addrbytnum]);
 					i2c_write(iic_test, (int8*)&idbuf[0], u8Addrbytnum, (int8*)&idbuf[u8Addrbytnum], u8Databytnum);
 					if(i==0)
 					{
@@ -1326,14 +1401,29 @@ bool csi_yuv_mode(){
 
 	os_printf("csi init start  --\r\n");
 	os_printf("csi set size ====>%d*%d\r\n",image_w,image_h);
-	if(yuvbuf == NULL){
-		yuvbuf = os_malloc(p_sensor_cmd->pixelw*32+p_sensor_cmd->pixelw*32/2);
-		if(yuvbuf == NULL){
-			_os_printf("no room yuvbuf0\r\n");
-			return FALSE;
-		}
+
+	if(yuvbuf != NULL)
+	{
+		free(yuvbuf);
+		yuvbuf = NULL;
+		os_printf("free yuvbuff\r\n");
 	}
-	
+	if(yuvbuf == NULL)
+	{
+		os_printf("malloc yuvbuff\r\n");
+		yuvbuf = malloc(p_sensor_cmd->pixelw*32+p_sensor_cmd->pixelw*16);
+	}
+	else
+	{
+		os_printf("have yuvbuff\r\n");
+	}
+
+	if(yuvbuf == NULL)
+		yuvbuf = malloc(p_sensor_cmd->pixelw*32+p_sensor_cmd->pixelw*16);
+	if(yuvbuf == NULL){
+		_os_printf("no room yuvbuf0\r\n");
+		return FALSE;
+	}	
 #if SCEN_EN	
 	//dvp_set_size(dvp_test,0,0,image_w*2-1,image_h*2-1);
 	vpp_set_video_size(vpp_test,image_w*2,image_h*2);
@@ -1406,8 +1496,12 @@ bool csi_yuv_mode(){
 	vpp_set_watermark1_size(vpp_test,48,48);
 	vpp_set_watermark1_mode(vpp_test,0);
 	vpp_set_water1_rc(vpp_test,0);
+
+	/*
+	icm_001:1
 	
-	dvp_set_exchange_d5_d6(dvp_test,0);
+	*/
+	dvp_set_exchange_d5_d6(dvp_test,1);	
 	
 	os_printf("csi IRQ init\r\n");
 	dvp_request_irq(dvp_test,SII_ISR, (dvp_irq_hdl )&dvp_sip_isr,0);
@@ -1434,8 +1528,8 @@ bool csi_yuv_mode(){
 #endif
 	vpp_set_mode(vpp_test,IMAGE_FORMAT);
 
-	vpp_set_watermark0_enable(vpp_test,1);
-	vpp_set_watermark1_enable(vpp_test,1);
+	vpp_set_watermark0_enable(vpp_test,0);
+	vpp_set_watermark1_enable(vpp_test,0);
 	
 #if IPF_EN
 //	vpp_set_ifp_en(vpp_test,1);

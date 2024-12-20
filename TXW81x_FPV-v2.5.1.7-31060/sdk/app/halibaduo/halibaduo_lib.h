@@ -51,13 +51,18 @@
 // =====================================================================================================================
 #define HALI_PROJECT_1  1
 #define HALI_DEFAULT_OEM        "i4season"//"github.com/halibaduoxiansheng" /*Original Equipment Manufacturer*/
-#define HALI_DEFAULT_VER        "0.0.1"                         /*version*/
+#define HALI_DEFAULT_VER        "0.0.6"                         /*version*/
 #define HALI_DEFAULT_PRO        "PROJECT_1"                     /*project name*/
 #define HALI_AP_PREFIX 		    "Soulear-"//"UseeEar-"
 #define HALI_AP_PASSWORD		""
 // =====================================================================================================================
-
-
+// #define HALI_PROJECT_1  2
+// #define HALI_DEFAULT_OEM        "i4season"
+// #define HALI_DEFAULT_VER        "0.0.2"                    
+// #define HALI_DEFAULT_PRO        "PROJECT_1"
+// #define HALI_AP_PREFIX 		    "UseeEar-"
+// #define HALI_AP_PASSWORD		""
+// =====================================================================================================================
 #endif // HALIBADUO_LIB_H
 
 

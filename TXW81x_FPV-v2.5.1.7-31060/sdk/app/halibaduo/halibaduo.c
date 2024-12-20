@@ -6,6 +6,7 @@
 #include "hali_list_node.h"
 #include "hali_network.h"
 #include "hali_picture.h"
+#include "hali_wifi.h"
 // #include "../../lib/crypto/openssl/include/openssl/modes.h"
 
 
@@ -981,24 +982,46 @@ uint8_t pic_client_info_exist_check(struct sockaddr_in *addr)
     int i = 0;
     __disable_irq();
 
-    if (tx_pic->client_num == MAX_CLIENT_NUM) {
+    if (tx_pic->client_num == MAX_CLIENT_NUM) { // is full
         printf("we can not connect any more client, we have %d client now\n", MAX_CLIENT_NUM);
         __enable_irq();
         return 1;
     }
 
-    for (i = 0; i < MAX_CLIENT_NUM; i++) {
-        if (memcmp(addr, &pic_client[i].addr, sizeof(struct sockaddr_in)) == 0) { // already have this client
-            __enable_irq();
-            return 2;
+    for (i = 0; i < MAX_CLIENT_NUM; i++) { // check if exist or not 
+        if (pic_client[i].have_client == 1) {
+            // 使用一个局部变量来存储 inet_ntoa 的返回值
+            char addr_str[INET_ADDRSTRLEN] = {0};
+            char pic_client_addr_str[INET_ADDRSTRLEN] = {0};
+
+            // 将地址转为字符串
+            inet_ntoa_r(addr->sin_addr, addr_str, INET_ADDRSTRLEN);
+            inet_ntoa_r(pic_client[i].addr.sin_addr, pic_client_addr_str, INET_ADDRSTRLEN);
+
+            // 比较地址
+            if (memcmp(addr_str, pic_client_addr_str, INET_ADDRSTRLEN) == 0) { 
+                __enable_irq();  // 启用中断
+                return 2;  // 返回 2 表示已经存在
+            }
         }
     }
 
+
+#if 0 // DEBUG
+    printf("=====================================================\r\n");
+    printf("add new client, its information :\r\n");
+    printf("Address: %s\r\n", inet_ntoa(addr->sin_addr));
+    printf("Port: %d\r\n", ntohs(addr->sin_port));
+    printf("Family: %d\r\n", addr->sin_family);
+    printf("=====================================================\r\n");
+#endif
+
     for (i = 0; i < MAX_CLIENT_NUM; i++) {
-        if (pic_client[i].addr.sin_len == 0) { // find a empty slot
+        if (pic_client[i].have_client == 0) { // find a empty slot,add info in this place
             memcpy(&pic_client[i].addr, addr, sizeof(struct sockaddr_in));
+            pic_client[i].addr.sin_port = htons(g_wifi.port); /*even though write this code,but g_wifi.port is next code get*/
+            pic_client[i].have_client = 1;
             tx_pic->client_index = i;
-            tx_pic->hava_client = 1;
             tx_pic->client_num++;
             break;
         }
@@ -1012,7 +1035,7 @@ uint8_t pic_client_info_delete(struct sockaddr_in *addr)
 {
     int i = 0, j = 0;
     __disable_irq();
-    if (!tx_pic->hava_client || tx_pic->client_num == 0) {
+    if (!tx_pic->have_client || tx_pic->client_num == 0) {
 
         printf("there is no any client tp connect, we can not delete anyone\r\n");
         __enable_irq();
@@ -1020,19 +1043,31 @@ uint8_t pic_client_info_delete(struct sockaddr_in *addr)
     }
 
     for (i = 0; i < MAX_CLIENT_NUM; i++) {
-        if (memcmp(addr, &pic_client[i].addr, sizeof(struct sockaddr_in)) == 0) { // find the client
-            memset(&pic_client[i].addr, 0, sizeof(struct sockaddr_in));
+        // 使用一个局部变量来存储 inet_ntoa 的返回值
+        char addr_str[INET_ADDRSTRLEN] = {0};
+        char pic_client_addr_str[INET_ADDRSTRLEN] = {0};
+
+        // 将地址转为字符串
+        inet_ntoa_r(addr->sin_addr, addr_str, INET_ADDRSTRLEN);
+        inet_ntoa_r(pic_client[i].addr.sin_addr, pic_client_addr_str, INET_ADDRSTRLEN);
+
+        // 比较地址
+        if (memcmp(addr_str, pic_client_addr_str, INET_ADDRSTRLEN) == 0) {
+        // if (memcmp(inet_ntoa(addr->sin_addr), inet_ntoa(pic_client[i].addr.sin_addr), sizeof(inet_ntoa(addr->sin_addr))) == 0) { // find the client
+            memset(&pic_client[i], 0, sizeof(struct G_TX_PIC));
             tx_pic->client_num--;
-            if (tx_pic->client_index == i && tx_pic->client_num) {
+            if (tx_pic->client_index == i && tx_pic->client_num) { // if the client is the current client, find another client
                 for (j = 0; j < MAX_CLIENT_NUM; j++) {
-                    if (pic_client[i].addr.sin_len != 0) {
+                    if (pic_client[i].have_client == 1) {
                         tx_pic->client_index = j;
-                        break;
+                        __enable_irq();
+                        return 0;
                     }
                 }
             }
+            pic_client[i].have_client = 0;
             if (tx_pic->client_num == 0) {
-                tx_pic->hava_client = 0;
+                tx_pic->have_client = 0;
             }
             __enable_irq();
         }

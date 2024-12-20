@@ -9,7 +9,7 @@
 #define MAX_CLIENT_NUM 4
 struct G_TX_PIC {
     uint8_t open_flag:1;
-    uint8_t hava_client:1; // hava remote client connect
+    uint8_t have_client:1; // hava remote client connect
     uint8_t client_num:3;
     uint8_t client_index:3;
 
